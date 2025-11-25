@@ -12,12 +12,14 @@ import {
   BarChart3,
   Settings,
   Plug2,
+  Users2,
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
+  { name: 'Recipients', href: '/recipients', icon: Users2 },
   { name: 'Templates', href: '/templates', icon: Layout },
   { name: 'Brand Kit', href: '/brand', icon: Palette },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },

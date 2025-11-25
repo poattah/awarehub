@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,10 +10,11 @@ type Integration = {
   name: string
   category: string
   description: string
+  href?: string
 }
 
 const integrations: Integration[] = [
-  { name: 'Slack', category: 'Collaboration', description: 'Send campaigns, reminders, and polls directly to channels.' },
+  { name: 'Slack', category: 'Collaboration', description: 'Send campaigns, reminders, and polls directly to channels.', href: '/integrations/slack' },
   { name: 'Microsoft Teams', category: 'Collaboration', description: 'Deliver announcements to Teams chats and channels.' },
   { name: 'Outlook', category: 'Email', description: 'Schedule campaign emails with your corporate calendar.' },
   { name: 'Google Workspace', category: 'Email', description: 'Distribute updates to Gmail groups and calendars.' },
@@ -176,11 +178,19 @@ function IntegrationCard({ integration }: { integration: Integration }) {
             {integration.category}
           </Badge>
         </div>
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>HR system</span>
-          <Button variant="outline" size="sm">
-            Connect
-          </Button>
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>{integration.category} system</span>
+          {integration.href ? (
+            <Link href={integration.href} className="inline-flex">
+              <Button variant="outline" size="sm">
+                Configure
+              </Button>
+            </Link>
+          ) : (
+            <Button variant="outline" size="sm">
+              Connect
+            </Button>
+          )}
         </div>
       </div>
     </Card>
