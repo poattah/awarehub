@@ -1,38 +1,64 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Search, MoreVertical } from 'lucide-react'
-import Link from 'next/link'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  ArrowLeft,
+  Brush,
+  Eye,
+  Layers,
+  Megaphone,
+  MoreVertical,
+  Sparkles,
+  X,
+} from 'lucide-react'
+
+type Campaign = typeof campaigns[0]
 
 export default function CampaignsPage() {
+  const [selected, setSelected] = useState<Campaign | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+
+  const handlePreview = (campaign: Campaign) => {
+    setSelected(campaign)
+    setIsPreviewOpen(true)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Campaigns</h1>
           <p className="text-muted-foreground">
-            Manage your awareness campaigns
+            Manage, preview, and design your awareness campaigns.
           </p>
         </div>
-        <Link href="/campaigns/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Campaign
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/campaigns/new">
+            <Button>
+              <Megaphone className="mr-2 h-4 w-4" />
+              New Campaign
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Search and Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:space-x-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
+              <Input
                 type="search"
                 placeholder="Search campaigns..."
-                className="w-full rounded-lg border bg-background pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="pl-10"
               />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">🔎</span>
             </div>
             <Button variant="outline">All Status</Button>
             <Button variant="outline">All Categories</Button>
@@ -40,10 +66,9 @@ export default function CampaignsPage() {
         </CardContent>
       </Card>
 
-      {/* Campaigns List */}
       <div className="space-y-4">
         {campaigns.map((campaign) => (
-          <Card key={campaign.id} className="hover:shadow-md transition-shadow">
+          <Card key={campaign.id} className="hover:shadow-soft-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-2 flex-1">
@@ -77,13 +102,225 @@ export default function CampaignsPage() {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">View Details</Button>
-                  <Button variant="outline" size="sm">Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => handlePreview(campaign)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Preview & Design
+                  </Button>
+                  <Link href="/campaigns/new">
+                    <Button variant="outline" size="sm">Edit</Button>
+                  </Link>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {isPreviewOpen && selected && (
+        <PreviewModal campaign={selected} onClose={() => setIsPreviewOpen(false)} />
+      )}
+    </div>
+  )
+}
+
+function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () => void }) {
+  const [poster, setPoster] = useState({
+    title: campaign.name,
+    subtitle: campaign.description,
+    accent: '#FBBF24',
+    bg: '#F5F2EB',
+    image: campaign.assetImage,
+  })
+  const [asset, setAsset] = useState({
+    subject: `Hi @firstname, ${campaign.name} is live!`,
+    headline: '@companyName invites you to join',
+    body: 'Explore resources, join live sessions, and share feedback. We made this easy to act on.',
+    cta: 'View campaign',
+    image: campaign.assetImage,
+  })
+
+  const palette = useMemo(
+    () => [
+      { label: 'Amber', accent: '#FBBF24', bg: '#FDF6E3' },
+      { label: 'Cobalt', accent: '#2563EB', bg: '#E5ECFB' },
+      { label: 'Mint', accent: '#10B981', bg: '#E8F7F1' },
+      { label: 'Coral', accent: '#F97316', bg: '#FFF1E6' },
+    ],
+    []
+  )
+
+  return (
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+      <div className="w-full max-w-6xl rounded-3xl border border-border/70 bg-card shadow-soft-lg overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border/70 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Megaphone className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Preview & Design</p>
+              <p className="font-semibold text-lg">{campaign.name}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr]">
+          <Card className="border-border/60 shadow-soft-lg overflow-hidden">
+            <div className="border-b border-border/60 bg-muted/40 px-4 py-3 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Poster canvas</p>
+            </div>
+            <div className="p-4 space-y-4">
+              <div
+                className="relative overflow-hidden rounded-2xl border border-border/60 shadow-soft-lg"
+                style={{
+                  background: poster.bg,
+                }}
+              >
+                <div className="absolute top-3 right-3 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold" style={{ color: poster.accent }}>
+                  Awareness
+                </div>
+                <div className="grid gap-4 p-6 md:grid-cols-[2fr_1fr] items-center">
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-muted-foreground">Campaign message</p>
+                    <h3 className="text-2xl font-bold" style={{ color: '#111827' }}>
+                      {poster.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{poster.subtitle}</p>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold" style={{ color: poster.accent }}>
+                      Live from {campaign.date}
+                    </div>
+                  </div>
+                  <div className="aspect-[4/5] rounded-xl bg-white/70 shadow-soft relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-80" style={{ background: `radial-gradient(circle at 30% 30%, ${poster.accent}22, transparent 45%)` }} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <img src={poster.image} alt="" className="h-32 w-32 object-cover rounded-xl border border-border/60 shadow-soft" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Poster title</Label>
+                  <Input value={poster.title} onChange={(e) => setPoster((p) => ({ ...p, title: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Accent color</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {palette.map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={() => setPoster((p) => ({ ...p, accent: item.accent, bg: item.bg }))}
+                        className="flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-sm shadow-soft hover:scale-105 transition"
+                        style={{ background: item.bg, color: item.accent }}
+                      >
+                        <span className="h-3 w-3 rounded-full" style={{ background: item.accent }} />
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Subheading</Label>
+                  <Textarea
+                    rows={2}
+                    value={poster.subtitle}
+                    onChange={(e) => setPoster((p) => ({ ...p, subtitle: e.target.value }))}
+                    placeholder="Add more context about why this matters."
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="border-border/60 shadow-soft-lg overflow-hidden">
+            <div className="border-b border-border/60 bg-muted/40 px-4 py-3 flex items-center gap-2">
+              <Brush className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Email / asset design</p>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="rounded-2xl border border-border/60 bg-white shadow-soft-lg overflow-hidden">
+                <div className="border-b border-border/60 px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Subject</span>
+                  <span className="font-semibold text-foreground truncate max-w-[60%]">{asset.subject}</span>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="rounded-xl border border-border/60 bg-muted/40 p-3 flex items-center justify-center">
+                    <img src={asset.image} alt="" className="h-24 w-24 object-cover rounded-lg border border-border/60 shadow-soft" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-foreground">{asset.headline}</p>
+                    <p className="text-sm text-muted-foreground">{asset.body}</p>
+                  </div>
+                  <Button className="w-full" style={{ background: poster.accent, color: '#0F172A' }}>
+                    {asset.cta}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid gap-3">
+                <div className="space-y-1">
+                  <Label>Subject</Label>
+                  <Input value={asset.subject} onChange={(e) => setAsset((p) => ({ ...p, subject: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Headline</Label>
+                  <Input value={asset.headline} onChange={(e) => setAsset((p) => ({ ...p, headline: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Body copy</Label>
+                  <Textarea rows={2} value={asset.body} onChange={(e) => setAsset((p) => ({ ...p, body: e.target.value }))} />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label>CTA label</Label>
+                    <Input value={asset.cta} onChange={(e) => setAsset((p) => ({ ...p, cta: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Hero image URL</Label>
+                    <Input value={asset.image} onChange={(e) => setAsset((p) => ({ ...p, image: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="border-border/60 shadow-soft-lg overflow-hidden">
+            <div className="border-b border-border/60 bg-muted/40 px-4 py-3 flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">Campaign snapshot</p>
+            </div>
+            <div className="p-4 space-y-3 text-sm text-muted-foreground">
+              <div className="flex items-center justify-between">
+                <span>Channels</span>
+                <span className="font-semibold text-foreground">{campaign.channels.join(' • ')}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Status</span>
+                <span className="font-semibold text-foreground capitalize">{campaign.status}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Launch</span>
+                <span className="font-semibold text-foreground">{campaign.date}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Reach</span>
+                <span className="font-semibold text-foreground">{campaign.reach}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Engagement</span>
+                <span className="font-semibold text-foreground">{campaign.engagement}%</span>
+              </div>
+              <div className="pt-2 flex gap-2">
+                <Button className="flex-1">Use this layout</Button>
+                <Button variant="outline" className="flex-1">
+                  Export poster
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   )
@@ -99,6 +336,7 @@ const campaigns = [
     engagement: 42,
     reach: 847,
     channels: ['Slack', 'Email', 'Intranet'],
+    assetImage: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=320&q=80',
   },
   {
     id: 2,
@@ -109,6 +347,7 @@ const campaigns = [
     engagement: 0,
     reach: 0,
     channels: ['Slack', 'Teams', 'Email'],
+    assetImage: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=320&q=80',
   },
   {
     id: 3,
@@ -119,6 +358,7 @@ const campaigns = [
     engagement: 38,
     reach: 732,
     channels: ['Email', 'Intranet'],
+    assetImage: 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=320&q=80',
   },
   {
     id: 4,
@@ -129,6 +369,7 @@ const campaigns = [
     engagement: 0,
     reach: 0,
     channels: ['Slack'],
+    assetImage: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=320&q=80',
   },
 ]
 
