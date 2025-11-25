@@ -11,6 +11,7 @@ import {
   Palette,
   BarChart3,
   Settings,
+  Plug2,
 } from 'lucide-react'
 
 const navigation = [
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Templates', href: '/templates', icon: Layout },
   { name: 'Brand Kit', href: '/brand', icon: Palette },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Integrations', href: '/integrations', icon: Plug2 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
