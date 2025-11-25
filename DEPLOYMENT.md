@@ -103,6 +103,20 @@ vercel
    SLACK_SIGNING_SECRET=your-signing-secret
    ```
 
+#### Email via Resend
+
+1. Sign up at [Resend](https://resend.com/) and get an API key.
+2. Add to `.env.local` / Vercel:
+   ```env
+   RESEND_API_KEY=your-resend-key
+   RESEND_FROM_EMAIL=AwareHub <noreply@yourdomain.com>
+   ```
+3. Send emails through the internal route (server-side):
+   - `POST /api/integrations/resend/send`
+   - JSON: `{"to":["user@company.com"],"subject":"Hello","html":"<p>Hi there</p>"}` (or `text`)
+   - Optional: `cc`, `bcc`, `reply_to`
+4. Keep the API key server-only; call this route from the app, not Resend directly.
+
 #### Microsoft Teams/Graph API
 
 1. Go to Azure Portal > App Registrations
