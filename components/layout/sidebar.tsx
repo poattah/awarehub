@@ -33,7 +33,7 @@ export function Sidebar() {
       {/* Logo Header */}
       <div className="flex h-16 items-center px-6 border-b border-border/50">
         <Link href="/dashboard" className="flex items-center space-x-2 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft group-hover:shadow-soft-lg group-hover:scale-105 transition-all duration-200">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400 text-black shadow-soft group-hover:shadow-soft-lg group-hover:scale-105 transition-all duration-200">
             <svg className="h-5 w-5 transition-transform group-hover:rotate-12" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
             </svg>
@@ -54,7 +54,7 @@ export function Sidebar() {
                 'group flex items-center space-x-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 relative overflow-hidden',
                 isActive
                   ? 'bg-primary text-primary-foreground shadow-soft'
-                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:translate-x-1'
+                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground hover:translate-x-1'
               )}
               style={{
                 animationDelay: `${index * 50}ms`
