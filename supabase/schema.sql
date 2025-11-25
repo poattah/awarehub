@@ -8,28 +8,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =====================================================
--- HELPER FUNCTIONS
--- =====================================================
-
--- Function to get current organization from authenticated user
-CREATE OR REPLACE FUNCTION public.get_current_organization_id()
-RETURNS UUID AS $$
-  SELECT organization_id
-  FROM public.profiles
-  WHERE id = auth.uid()
-  LIMIT 1;
-$$ LANGUAGE SQL SECURITY DEFINER;
-
--- Function to automatically update updated_at timestamp
-CREATE OR REPLACE FUNCTION public.handle_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- =====================================================
 -- CORE TABLES
 -- =====================================================
 
@@ -429,6 +407,28 @@ CREATE TABLE public.survey_responses (
 
 CREATE INDEX idx_survey_responses_survey_id ON public.survey_responses(survey_id);
 CREATE INDEX idx_survey_responses_profile_id ON public.survey_responses(profile_id);
+
+-- =====================================================
+-- HELPER FUNCTIONS (after tables are created)
+-- =====================================================
+
+-- Function to get current organization from authenticated user
+CREATE OR REPLACE FUNCTION public.get_current_organization_id()
+RETURNS UUID AS $$
+  SELECT organization_id
+  FROM public.profiles
+  WHERE id = auth.uid()
+  LIMIT 1;
+$$ LANGUAGE SQL SECURITY DEFINER;
+
+-- Function to automatically update updated_at timestamp
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- =====================================================
 -- TRIGGERS FOR UPDATED_AT
