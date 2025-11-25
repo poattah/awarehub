@@ -10,7 +10,7 @@ AwareHub is a comprehensive SaaS platform that helps companies design, schedule,
 
 - **📅 Awareness Calendar Engine**: 365+ preloaded global awareness days with smart recommendations
 - **🎨 Template & Design Studio**: Canva-style drag-and-drop editor with brand kit integration
-- **📢 Multi-Channel Distribution**: Slack, Microsoft Teams, Email, Intranet, and more
+- **📢 Multi-Channel Distribution**: Email campaigns via Resend, Slack, Microsoft Teams, Intranet, and more
 - **📊 Analytics Dashboard**: Track engagement, measure impact, and export insights
 - **👥 Team Collaboration**: Role-based access control with approval workflows
 - **🎯 Campaign Management**: Create, schedule, and manage awareness campaigns end-to-end
@@ -42,6 +42,7 @@ AwareHub is a comprehensive SaaS platform that helps companies design, schedule,
 - Real-time subscriptions
 
 **Integrations**
+- Resend (Email campaigns)
 - Slack API
 - Microsoft Graph API (Teams, Outlook)
 - OpenAI API (future feature)
@@ -95,7 +96,22 @@ AwareHub is a comprehensive SaaS platform that helps companies design, schedule,
    # Copy contents of supabase/seed.sql and execute
    ```
 
-5. **Run the development server**
+5. **Set up email campaigns (optional)**
+
+   To enable email campaign sending:
+
+   a. Sign up for a [Resend](https://resend.com) account (free tier available)
+
+   b. Get your API key from the Resend dashboard
+
+   c. Add to your `.env` file:
+   ```env
+   RESEND_API_KEY=re_your_api_key_here
+   ```
+
+   d. See [docs/EMAIL_SETUP.md](docs/EMAIL_SETUP.md) for detailed setup instructions
+
+6. **Run the development server**
    ```bash
    npm run dev
    ```

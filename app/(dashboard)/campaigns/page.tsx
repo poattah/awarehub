@@ -17,6 +17,7 @@ import {
   Layers,
   Megaphone,
   MoreVertical,
+  Send,
   Sparkles,
   X,
 } from 'lucide-react'
@@ -222,6 +223,7 @@ export default function CampaignsPage() {
 
 function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () => void }) {
   const dialogRef = useRef<HTMLDivElement | null>(null)
+  const [showSendModal, setShowSendModal] = useState(false)
   const [poster, setPoster] = useState({
     title: campaign.name,
     subtitle: campaign.description,
@@ -428,11 +430,330 @@ function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
                 <span className="font-semibold text-foreground">{campaign.engagement}%</span>
               </div>
               <div className="pt-2 flex gap-2">
-                <Button className="flex-1">Use this layout</Button>
+                <Button className="flex-1" onClick={() => setShowSendModal(true)}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Campaign
+                </Button>
                 <Button variant="outline" className="flex-1">
                   Export poster
                 </Button>
               </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {showSendModal && (
+        <SendCampaignModal
+          campaign={campaign}
+          emailContent={asset}
+          accentColor={poster.accent}
+          onClose={() => setShowSendModal(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+type SendCampaignModalProps = {
+  campaign: Campaign
+  emailContent: {
+    subject: string
+    headline: string
+    body: string
+    cta: string
+    image: string
+  }
+  accentColor: string
+  onClose: () => void
+}
+
+function SendCampaignModal({ campaign, emailContent, accentColor, onClose }: SendCampaignModalProps) {
+  const [recipientLists, setRecipientLists] = useState<any[]>([])
+  const [selectedListId, setSelectedListId] = useState<string>('')
+  const [testEmail, setTestEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [result, setResult] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [ctaUrl, setCtaUrl] = useState('https://your-campaign-url.com')
+
+  useEffect(() => {
+    const fetchRecipientLists = async () => {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('recipient_lists')
+        .select('id, name, member_count')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        setError('Failed to load recipient lists')
+      } else {
+        setRecipientLists(data || [])
+        if (data && data.length > 0) {
+          setSelectedListId(data[0].id)
+        }
+      }
+      setLoading(false)
+    }
+
+    fetchRecipientLists()
+  }, [])
+
+  const handleSendTest = async () => {
+    if (!testEmail) {
+      setError('Please enter a test email address')
+      return
+    }
+
+    setSending(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const response = await fetch('/api/campaigns/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          subject: emailContent.subject,
+          headline: emailContent.headline,
+          bodyText: emailContent.body,
+          ctaLabel: emailContent.cta,
+          ctaUrl,
+          imageUrl: emailContent.image,
+          accentColor,
+          testMode: true,
+          testEmail,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.ok) {
+        setError(data.error || 'Failed to send test email')
+      } else {
+        setResult({ type: 'test', ...data })
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send test email')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const handleSendCampaign = async () => {
+    if (!selectedListId) {
+      setError('Please select a recipient list')
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to send this campaign to all recipients in the selected list? This action cannot be undone.`
+    )
+
+    if (!confirmed) return
+
+    setSending(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const response = await fetch('/api/campaigns/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          recipientListId: selectedListId,
+          subject: emailContent.subject,
+          headline: emailContent.headline,
+          bodyText: emailContent.body,
+          ctaLabel: emailContent.cta,
+          ctaUrl,
+          imageUrl: emailContent.image,
+          accentColor,
+          testMode: false,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.ok) {
+        setError(data.error || 'Failed to send campaign')
+      } else {
+        setResult({ type: 'campaign', ...data })
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send campaign')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-3xl border border-border/70 bg-card shadow-soft-lg overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border/70 px-6 py-4 bg-card/95 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <Send className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Send Campaign</p>
+              <p className="font-semibold text-lg">{campaign.name}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+          {result && (
+            <div className={`rounded-xl border p-4 ${result.type === 'test' ? 'border-blue-200 bg-blue-50' : 'border-green-200 bg-green-50'}`}>
+              <p className={`text-sm font-semibold ${result.type === 'test' ? 'text-blue-900' : 'text-green-900'}`}>
+                {result.message}
+              </p>
+              {result.type === 'campaign' && (
+                <div className="mt-2 text-xs text-green-800">
+                  <p>✅ Sent: {result.sentCount}</p>
+                  {result.failureCount > 0 && <p>❌ Failed: {result.failureCount}</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm font-semibold text-red-900">{error}</p>
+            </div>
+          )}
+
+          {/* Email Preview */}
+          <Card className="border-border/60 shadow-soft">
+            <div className="border-b border-border/60 bg-muted/40 px-4 py-3">
+              <p className="text-sm font-semibold">Email Preview</p>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="rounded-xl border border-border/60 bg-white shadow-soft overflow-hidden">
+                <div className="border-b border-border/60 px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Subject</span>
+                  <span className="font-semibold text-foreground truncate max-w-[60%]">{emailContent.subject}</span>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="rounded-xl border border-border/60 bg-muted/40 p-3 flex items-center justify-center">
+                    <img src={emailContent.image} alt="" className="h-24 w-24 object-cover rounded-lg border border-border/60 shadow-soft" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-foreground">{emailContent.headline}</p>
+                    <p className="text-sm text-muted-foreground">{emailContent.body}</p>
+                  </div>
+                  <Button className="w-full" style={{ background: accentColor, color: '#FFFFFF' }}>
+                    {emailContent.cta}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Campaign URL (CTA Destination)</Label>
+                <Input
+                  value={ctaUrl}
+                  onChange={(e) => setCtaUrl(e.target.value)}
+                  placeholder="https://your-campaign-url.com"
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Test Email */}
+          <Card className="border-border/60 shadow-soft">
+            <div className="border-b border-border/60 bg-muted/40 px-4 py-3">
+              <p className="text-sm font-semibold">Send Test Email</p>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="space-y-2">
+                <Label>Test Email Address</Label>
+                <Input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder="your.email@example.com"
+                />
+              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleSendTest}
+                disabled={sending || !testEmail}
+              >
+                {sending ? (
+                  <>
+                    <LoadingSpinner className="mr-2 h-4 w-4" />
+                    Sending Test...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Send Test Email
+                  </>
+                )}
+              </Button>
+            </div>
+          </Card>
+
+          {/* Send to Recipients */}
+          <Card className="border-border/60 shadow-soft">
+            <div className="border-b border-border/60 bg-muted/40 px-4 py-3">
+              <p className="text-sm font-semibold">Send to Recipients</p>
+            </div>
+            <div className="p-4 space-y-3">
+              {loading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <LoadingSpinner className="h-4 w-4" />
+                  Loading recipient lists...
+                </div>
+              ) : recipientLists.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  No recipient lists found. Please create a recipient list first.
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Select Recipient List</Label>
+                    <select
+                      value={selectedListId}
+                      onChange={(e) => setSelectedListId(e.target.value)}
+                      className="w-full rounded-xl border border-border/60 bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {recipientLists.map((list) => (
+                        <option key={list.id} value={list.id}>
+                          {list.name} ({list.member_count || 0} recipients)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={handleSendCampaign}
+                    disabled={sending || !selectedListId}
+                  >
+                    {sending ? (
+                      <>
+                        <LoadingSpinner className="mr-2 h-4 w-4" />
+                        Sending Campaign...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Send Campaign to All Recipients
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </div>
           </Card>
         </div>
