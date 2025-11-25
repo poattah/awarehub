@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { LoadingSpinner } from '@/components/ui/loading'
+import { supabase } from '@/lib/supabase'
 import {
   ArrowLeft,
   Brush,
@@ -19,16 +21,99 @@ import {
   X,
 } from 'lucide-react'
 
-type Campaign = typeof campaigns[0]
+type Campaign = {
+  id: string | number
+  name: string
+  description: string
+  status: string
+  date: string
+  engagement: number
+  reach: number
+  channels: string[]
+  assetImage: string
+}
 
 export default function CampaignsPage() {
   const [selected, setSelected] = useState<Campaign | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [campaigns, setCampaigns] = useState<Campaign[]>(fallbackCampaigns)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [autoSeedAttempted, setAutoSeedAttempted] = useState(false)
 
   const handlePreview = (campaign: Campaign) => {
     setSelected(campaign)
     setIsPreviewOpen(true)
   }
+
+  useEffect(() => {
+    let active = true
+
+    const fetchCampaigns = async (skipSeed?: boolean) => {
+      setLoading(true)
+      setError(null)
+
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('id, name, description, status, start_at, metadata')
+        .order('start_at', { ascending: false })
+        .limit(12)
+
+      if (!active) return
+
+      if (error) {
+        setError('Supabase fetch failed; showing sample campaigns.')
+        setLoading(false)
+        return
+      }
+
+      if (data && data.length) {
+        const mapped = data.map((item) => {
+          const meta = (item as any).metadata || {}
+          const startDate = item.start_at ? new Date(item.start_at).toLocaleDateString() : 'Not scheduled'
+          return {
+            id: item.id,
+            name: item.name,
+            description: item.description || '—',
+            status: item.status || 'draft',
+            date: startDate,
+            engagement: meta.engagement ?? 0,
+            reach: meta.reach ?? 0,
+            channels: Array.isArray(meta.channels) ? meta.channels : ['Email', 'Slack'],
+            assetImage:
+              meta.asset_image ||
+              'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=320&q=80',
+          } satisfies Campaign
+        })
+        setCampaigns(mapped)
+        setLoading(false)
+        return
+      }
+
+      if (!skipSeed && !autoSeedAttempted) {
+        const seedRes = await fetch('/api/internal/bootstrap-campaigns', { method: 'POST' })
+        setAutoSeedAttempted(true)
+
+        if (!seedRes.ok) {
+          setError('No campaigns found; auto-seed failed. Showing sample data.')
+          setLoading(false)
+          return
+        }
+
+        // After seeding, refetch
+        return fetchCampaigns(true)
+      }
+
+      setError('No campaigns found in Supabase; showing sample campaigns.')
+      setLoading(false)
+    }
+
+    fetchCampaigns()
+
+    return () => {
+      active = false
+    }
+  }, [autoSeedAttempted])
 
   return (
     <div className="space-y-6">
@@ -63,57 +148,69 @@ export default function CampaignsPage() {
             <Button variant="outline">All Status</Button>
             <Button variant="outline">All Categories</Button>
           </div>
+          {error && (
+            <div className="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
+              {error}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <div className="space-y-4">
-        {campaigns.map((campaign) => (
-          <Card key={campaign.id} className="hover:shadow-soft-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-2 flex-1">
-                  <div className="flex items-center space-x-2">
-                    <CardTitle className="text-xl">{campaign.name}</CardTitle>
-                    <Badge variant={getStatusVariant(campaign.status)}>
-                      {campaign.status}
-                    </Badge>
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <LoadingSpinner className="h-5 w-5" />
+            Loading campaigns from Supabase...
+          </div>
+        ) : (
+          campaigns.map((campaign) => (
+            <Card key={campaign.id} className="hover:shadow-soft-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center space-x-2">
+                      <CardTitle className="text-xl">{campaign.name}</CardTitle>
+                      <Badge variant={getStatusVariant(campaign.status)}>
+                        {campaign.status}
+                      </Badge>
+                    </div>
+                    <CardDescription>{campaign.description}</CardDescription>
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                      <span>📅 {campaign.date}</span>
+                      <span>•</span>
+                      <span>📊 {campaign.engagement}% engagement</span>
+                      <span>•</span>
+                      <span>👥 {campaign.reach} reached</span>
+                    </div>
                   </div>
-                  <CardDescription>{campaign.description}</CardDescription>
-                  <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                    <span>📅 {campaign.date}</span>
-                    <span>•</span>
-                    <span>📊 {campaign.engagement}% engagement</span>
-                    <span>•</span>
-                    <span>👥 {campaign.reach} reached</span>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="flex flex-wrap gap-2">
-                  {campaign.channels.map((channel) => (
-                    <Badge key={channel} variant="outline">
-                      {channel}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handlePreview(campaign)}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    Preview & Design
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-4 w-4" />
                   </Button>
-                  <Link href="/campaigns/new">
-                    <Button variant="outline" size="sm">Edit</Button>
-                  </Link>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    {campaign.channels.map((channel) => (
+                      <Badge key={channel} variant="outline">
+                        {channel}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handlePreview(campaign)}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Preview & Design
+                    </Button>
+                    <Link href="/campaigns/new">
+                      <Button variant="outline" size="sm">Edit</Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       {isPreviewOpen && selected && (
@@ -124,6 +221,7 @@ export default function CampaignsPage() {
 }
 
 function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement | null>(null)
   const [poster, setPoster] = useState({
     title: campaign.name,
     subtitle: campaign.description,
@@ -149,10 +247,27 @@ function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
     []
   )
 
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="w-full max-w-6xl rounded-3xl border border-border/70 bg-card shadow-soft-lg overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/70 px-6 py-4">
+    <div
+      className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+      onClick={onClose}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-6xl rounded-3xl border border-border/70 bg-card shadow-soft-lg overflow-hidden max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border/70 px-6 py-4 sticky top-0 bg-card/95 backdrop-blur z-10">
           <div className="flex items-center gap-3">
             <Megaphone className="h-5 w-5 text-primary" />
             <div>
@@ -165,7 +280,7 @@ function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
           </Button>
         </div>
 
-        <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr] overflow-y-auto">
           <Card className="border-border/60 shadow-soft-lg overflow-hidden">
             <div className="border-b border-border/60 bg-muted/40 px-4 py-3 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -326,7 +441,7 @@ function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
   )
 }
 
-const campaigns = [
+const fallbackCampaigns: Campaign[] = [
   {
     id: 1,
     name: 'Mental Health Awareness Week',

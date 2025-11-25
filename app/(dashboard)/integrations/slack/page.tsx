@@ -29,13 +29,15 @@ export default function SlackIntegrationPage() {
     const clientId = process.env.NEXT_PUBLIC_SLACK_CLIENT_ID
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/integrations/slack/oauth/callback`
     const scope = 'chat:write,chat:write.public,users:read'
-    if (!clientId) return '#'
+    if (!clientId) return ''
     const url = new URL('https://slack.com/oauth/v2/authorize')
     url.searchParams.set('client_id', clientId)
     url.searchParams.set('scope', scope)
     url.searchParams.set('redirect_uri', redirectUri)
     return url.toString()
   }, [])
+
+  const missingClient = !process.env.NEXT_PUBLIC_SLACK_CLIENT_ID && !process.env.SLACK_CLIENT_ID
 
   const sendMessage = async (target: 'channel' | 'user') => {
     setResult({ status: 'loading' })
@@ -81,12 +83,17 @@ export default function SlackIntegrationPage() {
         </div>
         <div className="flex flex-col items-end gap-2">
           <Slack className="h-10 w-10 text-primary" />
-          <a href={slackAuthUrl} className="inline-flex">
-            <Button size="sm" variant="outline">
+          <a href={slackAuthUrl || '#'} className="inline-flex">
+            <Button size="sm" variant="outline" disabled={!slackAuthUrl}>
               <LinkIcon className="h-4 w-4 mr-2" />
               {connected ? 'Reconnect' : 'Connect to Slack'}
             </Button>
           </a>
+          {missingClient && (
+            <p className="text-xs text-red-600">
+              Set SLACK_CLIENT_ID (and NEXT_PUBLIC_SLACK_CLIENT_ID) in .env.local, then restart the app.
+            </p>
+          )}
         </div>
       </div>
 

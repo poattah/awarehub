@@ -160,6 +160,53 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['engagement_events']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['engagement_events']['Insert']>
       }
+      recipient_lists: {
+        Row: {
+          id: string
+          organization_id: string | null
+          name: string
+          type: 'List' | 'Segment'
+          tags: string[]
+          member_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['recipient_lists']['Row'], 'id' | 'created_at' | 'updated_at' | 'member_count'> & {
+          member_count?: number
+        }
+        Update: Partial<Database['public']['Tables']['recipient_lists']['Insert']>
+      }
+      recipient_contacts: {
+        Row: {
+          id: string
+          organization_id: string | null
+          full_name: string
+          email: string
+          phone: string | null
+          title: string | null
+          location: string | null
+          tags: string[]
+          channels: string[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['recipient_contacts']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          phone?: string | null
+          title?: string | null
+          location?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['recipient_contacts']['Insert']>
+      }
+      recipient_contact_memberships: {
+        Row: {
+          id: string
+          list_id: string
+          contact_id: string
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['recipient_contact_memberships']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['recipient_contact_memberships']['Insert']>
+      }
     }
     Views: {}
     Functions: {

@@ -170,3 +170,41 @@ ORDER BY c.start_at DESC;
 
 COMMENT ON VIEW public.upcoming_events IS 'Upcoming awareness events for calendar display';
 COMMENT ON VIEW public.active_campaigns IS 'Active and scheduled campaigns with creator info';
+
+-- =====================================================
+-- SAMPLE RECIPIENT LISTS & CONTACTS
+-- =====================================================
+
+WITH org AS (
+  SELECT id FROM public.organizations ORDER BY created_at ASC LIMIT 1
+), seed_lists AS (
+  INSERT INTO public.recipient_lists (organization_id, name, type, tags, member_count)
+  SELECT id, 'All Employees', 'List', ARRAY['Org-wide'], 3 FROM org
+  ON CONFLICT DO NOTHING
+  RETURNING id
+), seed_lists2 AS (
+  INSERT INTO public.recipient_lists (organization_id, name, type, tags, member_count)
+  SELECT id, 'Safety Champions', 'List', ARRAY['Safety'], 1 FROM org
+  ON CONFLICT DO NOTHING
+  RETURNING id
+), contacts AS (
+  INSERT INTO public.recipient_contacts (organization_id, full_name, email, phone, title, location, tags, channels)
+  SELECT id, 'Jordan Lee', 'jordan.lee@awarehub.com', '+1 (415) 555-0199', 'Employee Experience Lead', 'San Francisco, CA • PST', ARRAY['Managers & Leads','Remote'], ARRAY['Email','Slack DM'] FROM org
+  UNION ALL
+  SELECT id, 'Priya Desai', 'priya.desai@awarehub.com', '+1 (917) 555-1200', 'Director, DEI', 'New York, NY • EST', ARRAY['DEI','Org-wide'], ARRAY['Email','Teams'] FROM org
+  UNION ALL
+  SELECT id, 'Mateo Alvarez', 'mateo.alvarez@awarehub.com', '+44 20 7946 0101', 'Security Analyst', 'London, UK • GMT', ARRAY['Security','Remote'], ARRAY['Email'] FROM org
+  UNION ALL
+  SELECT id, 'Kara Mills', 'kara.mills@awarehub.com', '+1 (713) 555-8822', 'Safety Lead', 'Houston, TX • CST', ARRAY['Safety'], ARRAY['Email','Slack DM'] FROM org
+  ON CONFLICT DO NOTHING
+  RETURNING id, email
+)
+INSERT INTO public.recipient_contact_memberships (list_id, contact_id)
+SELECT l.id, c.id
+FROM seed_lists l
+JOIN contacts c ON c.email IN ('jordan.lee@awarehub.com','priya.desai@awarehub.com','mateo.alvarez@awarehub.com')
+UNION ALL
+SELECT l2.id, c.id
+FROM seed_lists2 l2
+JOIN contacts c ON c.email = 'kara.mills@awarehub.com'
+ON CONFLICT DO NOTHING;

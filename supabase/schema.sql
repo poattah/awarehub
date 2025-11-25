@@ -750,3 +750,46 @@ COMMENT ON TABLE public.templates IS 'Design templates for campaigns';
 COMMENT ON TABLE public.campaigns IS 'Awareness campaigns';
 COMMENT ON TABLE public.channels IS 'Distribution channels (Slack, Teams, Email, etc.)';
 COMMENT ON TABLE public.engagement_events IS 'User engagement tracking';
+
+-- =====================================================
+-- RECIPIENTS & LISTS (lightweight)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS public.recipient_lists (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'List' CHECK (type IN ('List', 'Segment')),
+  tags TEXT[] DEFAULT '{}',
+  member_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_recipient_lists_org ON public.recipient_lists(organization_id);
+
+CREATE TABLE IF NOT EXISTS public.recipient_contacts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  title TEXT,
+  location TEXT,
+  tags TEXT[] DEFAULT '{}',
+  channels TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recipient_contacts_email_org ON public.recipient_contacts(organization_id, email);
+CREATE INDEX IF NOT EXISTS idx_recipient_contacts_org ON public.recipient_contacts(organization_id);
+
+CREATE TABLE IF NOT EXISTS public.recipient_contact_memberships (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  list_id UUID NOT NULL REFERENCES public.recipient_lists(id) ON DELETE CASCADE,
+  contact_id UUID NOT NULL REFERENCES public.recipient_contacts(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recipient_contact_memberships_unique ON public.recipient_contact_memberships(list_id, contact_id);

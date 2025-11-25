@@ -1,11 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { LoadingSpinner } from '@/components/ui/loading'
+import { supabase } from '@/lib/supabase'
 import {
   Plus,
   Search,
@@ -23,10 +25,12 @@ import {
   X,
   Eye,
   Save,
+  MoreVertical,
+  Trash2,
 } from 'lucide-react'
 
 type List = {
-  id: number
+  id: string | number
   name: string
   type: 'List' | 'Segment'
   members: number
@@ -35,7 +39,7 @@ type List = {
 }
 
 type Contact = {
-  id: number
+  id: string | number
   name: string
   email: string
   phone: string
@@ -78,14 +82,148 @@ export default function RecipientsPage() {
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'lists' | 'growth'>('lists')
   const [viewMode, setViewMode] = useState<'lists' | 'contacts'>('lists')
-  const [selectedListId, setSelectedListId] = useState<number | null>(null)
+  const [selectedListId, setSelectedListId] = useState<string | number | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [previewContact, setPreviewContact] = useState<Contact | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<string | number | null>(null)
+  const [remoteLists, setRemoteLists] = useState<List[]>(lists)
+  const [listLoading, setListLoading] = useState(false)
+  const [listError, setListError] = useState<string | null>(null)
+  const [contactsLoading, setContactsLoading] = useState(false)
+  const [contactsError, setContactsError] = useState<string | null>(null)
+  const [autoSeedAttempted, setAutoSeedAttempted] = useState(false)
+  const menuRefs = useRef<Record<string | number, HTMLDivElement | null>>({})
+  const triggerRefs = useRef<Record<string | number, HTMLButtonElement | null>>({})
+
+  const listSource = remoteLists.length ? remoteLists : lists
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return lists
-    return lists.filter((l) => l.name.toLowerCase().includes(query.toLowerCase()))
-  }, [query])
+    if (!query.trim()) return listSource
+    return listSource.filter((l) => l.name.toLowerCase().includes(query.toLowerCase()))
+  }, [query, listSource])
+
+  const listActions = [
+    'Import data',
+    'Edit List Name',
+    'List settings',
+    'Merge list',
+    'Linked integrations',
+    'View campaigns',
+    'View excluded people',
+    'View sign-up forms',
+    'Suppress current members',
+    'Unsuppress current members',
+    'Delete List',
+  ]
+
+  useEffect(() => {
+    const handleClickAway = (event: MouseEvent) => {
+      if (!openMenuId) return
+      const target = event.target as Node
+      const menuEl = menuRefs.current[openMenuId]
+      const triggerEl = triggerRefs.current[openMenuId]
+      if (menuEl?.contains(target) || triggerEl?.contains(target)) return
+      setOpenMenuId(null)
+    }
+
+    document.addEventListener('mousedown', handleClickAway)
+    return () => document.removeEventListener('mousedown', handleClickAway)
+  }, [openMenuId])
+
+  useEffect(() => {
+    let active = true
+    const fetchLists = async (skipSeed?: boolean) => {
+      setListLoading(true)
+      setListError(null)
+
+      const { data, error } = await supabase
+        .from('recipient_lists')
+        .select('id, name, type, tags, member_count, created_at')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (!active) return
+
+      if (error) {
+        setListError('Supabase fetch failed; showing sample lists.')
+        setListLoading(false)
+        return
+      }
+
+      if (data && data.length) {
+        const mapped: List[] = data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          type: (item.type as 'List' | 'Segment') || 'List',
+          members: item.member_count ?? 0,
+          created: item.created_at?.slice(0, 10) || '',
+          tags: item.tags || [],
+        }))
+        setRemoteLists(mapped)
+        setListLoading(false)
+        return
+      }
+
+      if (!skipSeed && !autoSeedAttempted) {
+        const seedRes = await fetch('/api/internal/bootstrap-recipients', { method: 'POST' })
+        setAutoSeedAttempted(true)
+        if (!seedRes.ok) {
+          setListError('No lists found; auto-seed failed. Showing sample lists.')
+          setListLoading(false)
+          return
+        }
+        return fetchLists(true)
+      }
+
+      setListError('No lists found in Supabase; showing sample lists.')
+      setListLoading(false)
+    }
+
+    fetchLists()
+
+    return () => {
+      active = false
+    }
+  }, [autoSeedAttempted])
+
+  const fetchContacts = async (listId: string | number) => {
+    setContactsLoading(true)
+    setContactsError(null)
+
+    const { data, error } = await supabase
+      .from('recipient_contact_memberships')
+      .select('contact:recipient_contacts(id, full_name, email, phone, title, location, tags, channels)')
+      .eq('list_id', listId)
+      .limit(50)
+
+    if (error) {
+      setContactsError('Supabase fetch failed; showing sample contacts.')
+      setContacts(contactsByList[listId as number] || [])
+      setContactsLoading(false)
+      return
+    }
+
+    if (data && data.length) {
+      const mapped: Contact[] = data
+        .map((row) => row.contact)
+        .filter(Boolean)
+        .map((c) => ({
+          id: c!.id,
+          name: c!.full_name,
+          email: c!.email,
+          phone: c!.phone || '',
+          title: c!.title || '',
+          location: c!.location || '',
+          tags: (c!.tags as string[]) || [],
+          channels: Array.isArray(c!.channels) ? c!.channels.join(' + ') : '',
+        }))
+      setContacts(mapped)
+    } else {
+      setContactsError('No contacts found; showing sample contacts.')
+      setContacts(contactsByList[listId as number] || [])
+    }
+    setContactsLoading(false)
+  }
 
   return (
     <div className="space-y-6">
@@ -147,16 +285,28 @@ export default function RecipientsPage() {
             </div>
 
             <div className="grid gap-2">
-              <div className="grid grid-cols-4 gap-3 text-sm text-muted-foreground font-semibold px-3 py-2">
+              <div className="grid grid-cols-[1.6fr,0.9fr,1fr,1fr,0.9fr] gap-3 text-sm text-muted-foreground font-semibold px-3 py-2">
                 <span>Name</span>
                 <span>Type</span>
                 <span>Members</span>
                 <span>Created</span>
+                <span className="text-right">Actions</span>
               </div>
+              {listError && (
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
+                  {listError}
+                </div>
+              )}
+              {listLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-2">
+                  <LoadingSpinner className="h-4 w-4" />
+                  Loading lists from Supabase...
+                </div>
+              )}
               {filtered.map((list) => (
                 <div
                   key={list.id}
-                  className="grid grid-cols-4 gap-3 items-center rounded-xl border border-border/60 bg-card px-3 py-3 shadow-soft hover:border-primary/60 hover:bg-primary/5 transition"
+                  className="grid grid-cols-[1.6fr,0.9fr,1fr,1fr,0.9fr] gap-3 items-center rounded-xl border border-border/60 bg-card px-3 py-3 shadow-soft hover:border-primary/60 hover:bg-primary/5 transition relative"
                 >
                   <div className="flex items-center gap-2">
                     {list.type === 'List' ? (
@@ -165,7 +315,16 @@ export default function RecipientsPage() {
                       <Users className="h-4 w-4 text-primary" />
                     )}
                     <div className="flex flex-col">
-                      <span className="font-semibold">{list.name}</span>
+                      <button
+                        className="text-left font-semibold text-primary hover:underline"
+                        onClick={() => {
+                          setSelectedListId(list.id)
+                          fetchContacts(list.id)
+                          setViewMode('contacts')
+                        }}
+                      >
+                        {list.name}
+                      </button>
                       <div className="flex flex-wrap gap-1">
                         {(list.tags || []).map((tag) => (
                           <Badge key={tag} variant="outline" className="text-[11px]">{tag}</Badge>
@@ -175,19 +334,58 @@ export default function RecipientsPage() {
                   </div>
                   <span className="text-sm text-muted-foreground">{list.type}</span>
                   <span className="text-sm text-muted-foreground">{list.members.toLocaleString()}</span>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">{list.created}</span>
+                  <span className="text-sm text-muted-foreground">{list.created}</span>
+                  <div className="flex items-center justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
                         setSelectedListId(list.id)
-                        setContacts(contactsByList[list.id] || [])
+                        fetchContacts(list.id)
                         setViewMode('contacts')
                       }}
                     >
                       View
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      ref={(el) => {
+                        if (el) triggerRefs.current[list.id] = el
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setOpenMenuId(openMenuId === list.id ? null : list.id)
+                      }}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                    {openMenuId === list.id && (
+                      <div
+                        role="menu"
+                        className="absolute right-3 top-12 z-20 w-56 rounded-xl border border-border/70 bg-white shadow-soft-lg p-1"
+                        ref={(el) => {
+                          if (el) menuRefs.current[list.id] = el
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {listActions.map((action) => (
+                          <button
+                            key={action}
+                            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-muted/60 ${
+                              action === 'Delete List' ? 'text-red-600 hover:text-red-700' : 'text-foreground'
+                            }`}
+                            onClick={() => setOpenMenuId(null)}
+                          >
+                            <span className="flex items-center gap-2">
+                              {action === 'Delete List' ? <Trash2 className="h-4 w-4" /> : null}
+                              {action}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -200,11 +398,11 @@ export default function RecipientsPage() {
               <span>/</span>
               <span className="cursor-pointer hover:text-foreground" onClick={() => setViewMode('lists')}>Lists</span>
               <span>/</span>
-              <span className="text-foreground font-semibold">{lists.find((l) => l.id === selectedListId)?.name}</span>
+              <span className="text-foreground font-semibold">{listSource.find((l) => l.id === selectedListId)?.name}</span>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold">Contacts in {lists.find((l) => l.id === selectedListId)?.name}</p>
+                <p className="text-sm font-semibold">Contacts in {listSource.find((l) => l.id === selectedListId)?.name}</p>
                 <p className="text-xs text-muted-foreground">Drill down, edit inline, or preview a contact.</p>
               </div>
               <div className="flex gap-2">
@@ -223,6 +421,17 @@ export default function RecipientsPage() {
               <span>Location</span>
               <span>Actions</span>
             </div>
+            {contactsError && (
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
+                {contactsError}
+              </div>
+            )}
+            {contactsLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <LoadingSpinner className="h-4 w-4" />
+                Loading contacts...
+              </div>
+            )}
             {(contacts || []).map((contact, idx) => (
               <div
                 key={contact.id}
@@ -328,95 +537,6 @@ export default function RecipientsPage() {
           Need HRIS sync (Workday, BambooHR, Okta, etc.)? Connect via Integrations to auto-update lists and segments.
         </div>
       </Card>
-
-      {selectedListId && (
-        <Card className="border-border/60 shadow-soft-lg">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border/60">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="cursor-pointer hover:text-foreground" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Recipients</span>
-                <span>/</span>
-                <span className="cursor-pointer hover:text-foreground" onClick={() => {
-                  setSelectedListId(null)
-                  setContacts([])
-                }}>Lists</span>
-                <span>/</span>
-                <span className="text-foreground font-semibold">{lists.find((l) => l.id === selectedListId)?.name}</span>
-              </div>
-              <p className="text-sm font-semibold">Contacts in {lists.find((l) => l.id === selectedListId)?.name}</p>
-              <p className="text-xs text-muted-foreground">Drill down, edit inline, or preview a contact.</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add contact
-              </Button>
-            </div>
-          </div>
-          <div className="p-4 space-y-3">
-            <div className="grid grid-cols-[1.6fr,1.8fr,1.3fr,1fr,0.9fr] gap-3 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-              <span>Name</span>
-              <span>Email</span>
-              <span>Title</span>
-              <span>Location</span>
-              <span>Actions</span>
-            </div>
-            {contacts.map((contact, idx) => (
-              <div
-                key={contact.id}
-                className="grid grid-cols-[1.6fr,1.8fr,1.3fr,1fr,0.9fr] gap-3 items-center rounded-xl border border-border/60 bg-card px-3 py-3 shadow-soft"
-              >
-                <Input
-                  value={contact.name}
-                  onChange={(e) => {
-                    const next = [...contacts]
-                    next[idx] = { ...next[idx], name: e.target.value }
-                    setContacts(next)
-                  }}
-                  className="h-9"
-                />
-                <Input
-                  value={contact.email}
-                  onChange={(e) => {
-                    const next = [...contacts]
-                    next[idx] = { ...next[idx], email: e.target.value }
-                    setContacts(next)
-                  }}
-                  className="h-9"
-                />
-                <Input
-                  value={contact.title}
-                  onChange={(e) => {
-                    const next = [...contacts]
-                    next[idx] = { ...next[idx], title: e.target.value }
-                    setContacts(next)
-                  }}
-                  className="h-9"
-                />
-                <Input
-                  value={contact.location}
-                  onChange={(e) => {
-                    const next = [...contacts]
-                    next[idx] = { ...next[idx], location: e.target.value }
-                    setContacts(next)
-                  }}
-                  className="h-9"
-                />
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Save className="h-4 w-4 mr-1" />
-                    Save
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setPreviewContact(contact)}>
-                    <Eye className="h-4 w-4 mr-1" />
-                    Preview
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
 
       {previewContact && <RecipientPreview contact={previewContact} onClose={() => setPreviewContact(null)} />}
     </div>

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/integrations/slack?error=missing_code', origin))
   }
 
-  const clientId = process.env.SLACK_CLIENT_ID
+  const clientId = process.env.SLACK_CLIENT_ID || process.env.NEXT_PUBLIC_SLACK_CLIENT_ID
   const clientSecret = process.env.SLACK_CLIENT_SECRET
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/integrations/slack/oauth/callback`
 
