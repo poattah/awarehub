@@ -64,7 +64,14 @@ export default function CampaignBuilderPage() {
 
   // Email specific
   const [emailSubject, setEmailSubject] = useState('')
+  const [emailPreviewText, setEmailPreviewText] = useState('')
+  const [senderName, setSenderName] = useState('AwareHub')
+  const [senderEmail, setSenderEmail] = useState('noreply@awarehub.com')
+  const [emailHeadline, setEmailHeadline] = useState('Make this memorable')
   const [emailBody, setEmailBody] = useState('')
+  const [emailButton, setEmailButton] = useState('View campaign')
+  const [emailHero, setEmailHero] = useState('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80')
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('clean')
 
   // SMS specific
   const [smsMessage, setSmsMessage] = useState('')
@@ -76,6 +83,15 @@ export default function CampaignBuilderPage() {
   // Quiz specific
   const [quizTitle, setQuizTitle] = useState('')
   const [quizQuestions, setQuizQuestions] = useState<string[]>([''])
+
+  const emailTemplates = [
+    { key: 'clean', title: 'Clean announcement', subtitle: 'Single CTA with hero image' },
+    { key: 'digest', title: 'Highlights digest', subtitle: '3 cards + CTA' },
+    { key: 'story', title: 'Story blocks', subtitle: 'Alternating text/media' },
+    { key: 'poster', title: 'Poster drop', subtitle: 'Big visual with one liner' },
+  ]
+
+  const [showEmailDesigner, setShowEmailDesigner] = useState(false)
 
   const toggleSelection = (list: string[], value: string, setter: (next: string[]) => void) => {
     if (list.includes(value)) {
@@ -185,88 +201,51 @@ export default function CampaignBuilderPage() {
         </div>
 
         {/* Step Content */}
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto space-y-6">
           {/* SETUP STEP */}
           {activeStep === 'setup' && (
-            <Card className="border-border/60 shadow-soft-lg">
-              <div className="p-8 space-y-6">
-                {/* Asset Type Selection */}
-                <div className="space-y-3">
-                  <Label>Select Asset Type *</Label>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {assetTypes.map((type) => {
-                      const Icon = type.icon
-                      const selected = assetType === type.key
-                      return (
-                        <button
-                          key={type.key}
-                          onClick={() => setAssetType(type.key)}
-                          className={`relative rounded-xl border-2 p-4 text-left transition ${
-                            selected
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border/60 hover:border-primary/50'
-                          }`}
-                        >
-                          {selected && (
-                            <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center">
-                              <Check className="h-4 w-4" />
-                            </div>
-                          )}
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${selected ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-sm">{type.label}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{type.description}</p>
-                            </div>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4 border-t border-border/60">
+            <>
+              <Card className="border-border/60 shadow-soft-lg bg-muted/30">
+                <div className="p-8 space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Campaign name *</Label>
+                    <Label htmlFor="name" className="text-sm font-semibold">Campaign name *</Label>
                     <Input
                       id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g., Mental Health Awareness Week"
-                      className="text-lg"
+                      className="text-lg rounded-2xl"
                     />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="summary">Campaign objective</Label>
+                    <Label htmlFor="summary" className="text-sm font-semibold">Campaign objective</Label>
                     <Textarea
                       id="summary"
                       rows={3}
                       value={summary}
                       onChange={(e) => setSummary(e.target.value)}
                       placeholder="What should people know, feel, or do after this campaign?"
+                      className="rounded-2xl"
                     />
                   </div>
-
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="launch">Launch date</Label>
+                      <Label htmlFor="launch" className="text-sm font-semibold">Launch date</Label>
                       <Input
                         id="launch"
                         type="date"
                         value={launchDate}
                         onChange={(e) => setLaunchDate(e.target.value)}
+                        className="rounded-2xl"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cadence">Cadence</Label>
+                      <Label htmlFor="cadence" className="text-sm font-semibold">Cadence</Label>
                       <select
                         id="cadence"
                         value={cadence}
                         onChange={(e) => setCadence(e.target.value)}
-                        className="w-full rounded-xl border border-border/60 bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-2xl border border-border/60 bg-card px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option>Send now</option>
                         <option>Daily microlearning</option>
@@ -276,8 +255,62 @@ export default function CampaignBuilderPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+
+              <Card className="border-border/60 shadow-soft-lg">
+                <div className="p-8 space-y-6">
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">Select Asset Type *</p>
+                    <p className="text-sm text-muted-foreground">Pick a channel; we’ll tailor the design tools to your selection.</p>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {assetTypes.map((type) => {
+                      const Icon = type.icon
+                      const selected = assetType === type.key
+                      return (
+                        <button
+                          key={type.key}
+                          onClick={() => setAssetType(type.key)}
+                          className={`relative flex items-start gap-3 rounded-xl border-2 p-4 text-left transition ${
+                            selected ? 'border-primary bg-primary/5 shadow-soft' : 'border-border/60 hover:border-primary/50'
+                          }`}
+                        >
+                          {selected && (
+                            <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center">
+                              <Check className="h-4 w-4" />
+                            </div>
+                          )}
+                          <div className={`p-2 rounded-lg ${selected ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-semibold text-sm">{type.label}</p>
+                            <p className="text-xs text-muted-foreground">{type.description}</p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Mail className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">Customize Asset</p>
+                        <p className="text-sm text-muted-foreground">
+                          Email Design — personalize subject, sender, hero, and CTA.
+                        </p>
+                      </div>
+                    </div>
+                    <Button onClick={() => setShowEmailDesigner(true)}>
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </>
           )}
 
           {/* PERSONALIZE STEP */}
@@ -301,132 +334,16 @@ export default function CampaignBuilderPage() {
                     </div>
                   </div>
 
-                  {/* Asset type specific configuration */}
-                  {assetType === 'email' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="emailSubject">Email subject line</Label>
-                        <Input
-                          id="emailSubject"
-                          value={emailSubject}
-                          onChange={(e) => setEmailSubject(e.target.value)}
-                          placeholder="e.g., Let's talk about mental health"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="emailBody">Email body</Label>
-                        <Textarea
-                          id="emailBody"
-                          rows={6}
-                          value={emailBody}
-                          onChange={(e) => setEmailBody(e.target.value)}
-                          placeholder="Write your email message here..."
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {assetType === 'sms' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="smsMessage">SMS message (160 characters)</Label>
-                      <Textarea
-                        id="smsMessage"
-                        rows={3}
-                        maxLength={160}
-                        value={smsMessage}
-                        onChange={(e) => setSmsMessage(e.target.value)}
-                        placeholder="Keep it short and impactful..."
-                      />
-                      <p className="text-xs text-muted-foreground">{smsMessage.length}/160 characters</p>
-                    </div>
-                  )}
-
-                  {assetType === 'slack' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="slackChannel">Slack channel</Label>
-                        <Input
-                          id="slackChannel"
-                          value={slackChannel}
-                          onChange={(e) => setSlackChannel(e.target.value)}
-                          placeholder="e.g., #general, #announcements"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="slackMessage">Slack message</Label>
-                        <Textarea
-                          id="slackMessage"
-                          rows={4}
-                          value={slackMessage}
-                          onChange={(e) => setSlackMessage(e.target.value)}
-                          placeholder="Write your Slack message..."
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {assetType === 'quiz' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="quizTitle">Quiz title</Label>
-                        <Input
-                          id="quizTitle"
-                          value={quizTitle}
-                          onChange={(e) => setQuizTitle(e.target.value)}
-                          placeholder="e.g., Mental Health Awareness Quiz"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Quiz questions</Label>
-                        {quizQuestions.map((q, idx) => (
-                          <Input
-                            key={idx}
-                            value={q}
-                            onChange={(e) => {
-                              const updated = [...quizQuestions]
-                              updated[idx] = e.target.value
-                              setQuizQuestions(updated)
-                            }}
-                            placeholder={`Question ${idx + 1}`}
-                          />
-                        ))}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setQuizQuestions([...quizQuestions, ''])}
-                        >
-                          Add Question
-                        </Button>
-                      </div>
-                    </>
-                  )}
-
-                  {assetType === 'poster' && (
-                    <div className="space-y-2">
-                      <Label>Upload poster image</Label>
-                      <div className="rounded-xl border-2 border-dashed border-border/70 bg-muted/40 px-6 py-12 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            Drag image here or <span className="text-primary font-semibold cursor-pointer">browse</span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {assetType !== 'quiz' && assetType !== 'poster' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="tone">Additional notes</Label>
-                      <Textarea
-                        id="tone"
-                        rows={3}
-                        value={tone}
-                        onChange={(e) => setTone(e.target.value)}
-                        placeholder="Any special instructions or tone guidelines..."
-                      />
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="tone">Additional notes</Label>
+                    <Textarea
+                      id="tone"
+                      rows={3}
+                      value={tone}
+                      onChange={(e) => setTone(e.target.value)}
+                      placeholder="Any special instructions or tone guidelines..."
+                    />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -584,6 +501,141 @@ export default function CampaignBuilderPage() {
       <button className="fixed bottom-6 right-6 bg-primary text-primary-foreground rounded-full h-12 w-12 flex items-center justify-center shadow-lg hover:shadow-xl transition">
         <span className="text-xl font-bold">?</span>
       </button>
+
+      {showEmailDesigner && (
+        <div className="fixed inset-0 z-40 flex bg-black/60">
+          <div className="w-full lg:w-[320px] bg-card border-r border-border/60 p-4 space-y-3 overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Content blocks</h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowEmailDesigner(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {['Text', 'Image', 'Button', 'Divider', 'Social', 'HTML', 'Video', 'Spacer'].map((block) => (
+                <div key={block} className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-3 py-4 text-center text-muted-foreground">
+                  {block}
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Layouts</p>
+              <div className="grid grid-cols-2 gap-2">
+                {['1 Column', '2 Columns', 'Hero'].map((layout) => (
+                  <div key={layout} className="rounded-lg border border-border/60 bg-muted/20 px-3 py-3 text-center text-sm">
+                    {layout}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 bg-background overflow-y-auto">
+            <div className="max-w-5xl mx-auto p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Email template</p>
+                  <h3 className="text-xl font-bold">Design canvas</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowEmailDesigner(false)}>Cancel</Button>
+                  <Button onClick={() => setShowEmailDesigner(false)}>Save & return</Button>
+                </div>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-[1.1fr,1fr]">
+                <div className="space-y-3">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {emailTemplates.map((tpl) => (
+                      <button
+                        key={tpl.key}
+                        onClick={() => setSelectedTemplate(tpl.key)}
+                        className={`rounded-xl border p-3 text-left transition ${
+                          selectedTemplate === tpl.key ? 'border-primary bg-primary/5 shadow-soft' : 'border-border/60 hover:border-primary/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-sm">{tpl.title}</p>
+                          {selectedTemplate === tpl.key && <Check className="h-4 w-4 text-primary" />}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{tpl.subtitle}</p>
+                        <div className="mt-3 rounded-lg bg-muted/50 h-20 border border-dashed border-border/60" />
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid gap-3">
+                    <div className="space-y-1">
+                      <Label>Subject line</Label>
+                      <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} placeholder="Hi @firstname, @companyName has news" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Preview text</Label>
+                      <Input value={emailPreviewText} onChange={(e) => setEmailPreviewText(e.target.value)} placeholder="One-line teaser shown in inbox" />
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label>Sender name</Label>
+                        <Input value={senderName} onChange={(e) => setSenderName(e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Sender email</Label>
+                        <Input value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label>Hero image URL</Label>
+                        <Input value={emailHero} onChange={(e) => setEmailHero(e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>CTA label</Label>
+                        <Input value={emailButton} onChange={(e) => setEmailButton(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Headline</Label>
+                      <Input value={emailHeadline} onChange={(e) => setEmailHeadline(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Body copy</Label>
+                      <Textarea rows={6} value={emailBody} onChange={(e) => setEmailBody(e.target.value)} placeholder="Add the main story or instructions." />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">Live preview</p>
+                    <div className="flex gap-2 text-xs text-muted-foreground">
+                      <span className="rounded-full border px-2 py-1">Desktop</span>
+                      <span className="rounded-full border px-2 py-1 bg-muted/40">Mobile</span>
+                    </div>
+                  </div>
+                  <Card className="border-border/60 shadow-soft-lg overflow-hidden">
+                    <div className="border-b border-border/60 px-4 py-3">
+                      <p className="text-xs text-muted-foreground">From: {senderName} &lt;{senderEmail}&gt;</p>
+                      <p className="text-sm font-semibold">{emailSubject || 'Subject line goes here'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{emailPreviewText || 'Preview text will display here'}</p>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div className="rounded-xl border border-border/60 overflow-hidden bg-muted/30">
+                        <img src={emailHero} alt="" className="w-full h-44 object-cover" />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-lg font-semibold">{emailHeadline || 'Headline'}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {emailBody || 'Write a concise message that drives action. Keep it clear and purposeful.'}
+                        </p>
+                      </div>
+                      <Button className="w-full">{emailButton || 'Call to action'}</Button>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
