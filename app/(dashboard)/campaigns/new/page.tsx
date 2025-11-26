@@ -242,9 +242,20 @@ export default function CampaignBuilderPage() {
     }
     setLastSavedAt(payload.lastSavedAt)
     try {
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        console.error('No active session - cannot save campaign')
+        setSavingDraft(false)
+        return
+      }
+
       const res = await fetch('/api/campaigns/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           id: campaignId || undefined,
           name,
@@ -278,8 +289,11 @@ export default function CampaignBuilderPage() {
       if (res.ok && data?.id) {
         setCampaignId(data.id)
         if (data.status) setCampaignStatus(data.status)
+      } else {
+        console.error('Failed to save campaign:', data?.error)
       }
-    } catch {
+    } catch (err) {
+      console.error('Error saving campaign:', err)
       // ignore network errors for autosave
     }
     setSavingDraft(false)

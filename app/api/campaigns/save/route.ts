@@ -17,17 +17,9 @@ type Payload = {
 }
 
 export async function POST(request: Request) {
-  const orgId = process.env.SUPABASE_ORG_ID
-  const profileId = process.env.SUPABASE_PROFILE_ID
-  if (!orgId || !profileId) {
-    return NextResponse.json(
-      { ok: false, error: 'Missing SUPABASE_ORG_ID or SUPABASE_PROFILE_ID env' },
-      { status: 500 }
-    )
-  }
-
   const supabase = createServerClient()
 
+  // Parse request body
   let body: Payload
   try {
     body = await request.json()
@@ -39,10 +31,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'Name is required' }, { status: 400 })
   }
 
+  // Get authorization token from headers
+  const authHeader = request.headers.get('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return NextResponse.json(
+      { ok: false, error: 'Missing or invalid authorization header' },
+      { status: 401 }
+    )
+  }
+
+  const token = authHeader.replace('Bearer ', '')
+
+  // Get user from token
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+  if (authError || !user) {
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized - invalid or expired token' },
+      { status: 401 }
+    )
+  }
+
+  // Get user's profile to find their organization
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError || !profile?.organization_id) {
+    return NextResponse.json(
+      { ok: false, error: 'User profile not found or missing organization' },
+      { status: 403 }
+    )
+  }
+
   const upsertPayload = {
     id: body.id,
-    organization_id: orgId,
-    created_by: profileId,
+    organization_id: profile.organization_id,
+    created_by: user.id,
     name: body.name,
     description: body.summary || '',
     status: body.status || 'draft',
