@@ -13,7 +13,7 @@ type FormRecord = {
   name: string
   description?: string | null
   target_list_id?: string | null
-  fields?: Record<string, any>
+  fields?: any
   settings?: Record<string, any>
   success_config?: Record<string, any>
 }
@@ -67,14 +67,19 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const fieldConfig = (form?.fields || { email: { enabled: true, required: true } }) as Record<
-      string,
-      { enabled: boolean; required: boolean }
-    >
-    for (const [key, cfg] of Object.entries(fieldConfig)) {
-      if (cfg.enabled && cfg.required && !(values[key] || '').trim()) {
-        setError(`${key.replace('_', ' ')} is required`)
+    const fieldConfig = (form?.fields || [{ key: 'email', enabled: true, required: true }]) as any[]
+    for (const cfg of fieldConfig) {
+      if (cfg.enabled && cfg.required && !(values[cfg.key] || '').trim()) {
+        setError(`${cfg.label || cfg.key.replace('_', ' ')} is required`)
         return
+      }
+      if (cfg.type === 'address' && cfg.children) {
+        for (const child of cfg.children) {
+          if (child.enabled && child.required && !(values[`address_${child.key}`] || '').trim()) {
+            setError(`${child.label || child.key.replace('_', ' ')} is required`)
+            return
+          }
+        }
       }
     }
     setSubmitting(true)
@@ -182,101 +187,92 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
           {form.description && <p className="text-sm text-muted-foreground">{form.description}</p>}
         </div>
         <form className="space-y-3" onSubmit={handleSubmit}>
-          {Object.entries(form.fields || { email: { enabled: true, required: true } })
-            .filter(([, cfg]) => cfg?.enabled)
-            .map(([key, cfg]) => {
-              const label = key.replace('_', ' ')
+          {(form.fields as any[] | undefined)?.filter((cfg) => cfg.enabled).map((cfg) => {
+            if (cfg.type === 'select') {
+              return (
+                <div key={cfg.key} className="space-y-1">
+                  <label className="text-sm font-medium">
+                    {cfg.label}{cfg.required ? ' *' : ''}
+                  </label>
+                  <select
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    required={cfg.required}
+                    value={values[cfg.key] || ''}
+                    onChange={(e) =>
+                      setValues((prev) => ({
+                        ...prev,
+                        [cfg.key]: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select</option>
+                    {(cfg.options || ['male','female','non-binary','prefer_not_to_say','other']).map((opt: string) => (
+                      <option key={opt} value={opt}>{opt.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+              )
+            }
 
-              if (key === 'gender') {
-                return (
-                  <div key={key} className="space-y-1">
-                    <label className="text-sm font-medium">
-                      {label}{cfg.required ? ' *' : ''}
-                    </label>
-                    <select
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                      required={cfg.required}
-                      value={values[key] || ''}
-                      onChange={(e) =>
-                        setValues((prev) => ({
-                          ...prev,
-                          [key]: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">Select</option>
-                      {['male','female','non-binary','prefer_not_to_say','other'].map((opt) => (
-                        <option key={opt} value={opt}>{opt.replace(/_/g, ' ')}</option>
-                      ))}
-                    </select>
-                  </div>
-                )
-              }
-
-              if (key === 'address') {
-                const addressCfg = (cfg as any).fields || {}
-                const addressFields = [
-                  { key: 'street_address', label: 'Street address' },
-                  { key: 'apartment', label: 'Apartment' },
-                  { key: 'city', label: 'City' },
-                  { key: 'state', label: 'State' },
-                  { key: 'postal_code', label: 'Postal code' },
-                ]
-                return (
-                  <div key={key} className="space-y-2 rounded-lg border border-border/60 p-3 bg-muted/20">
-                    <p className="text-sm font-semibold">Address{cfg.required ? ' *' : ''}</p>
-                    {addressFields.map((field) => (
-                      <div key={field.key} className="space-y-1">
+            if (cfg.type === 'address') {
+              const children = cfg.children || []
+              return (
+                <div key={cfg.key} className="space-y-2 rounded-lg border border-border/60 p-3 bg-muted/20">
+                  <p className="text-sm font-semibold">{cfg.label}{cfg.required ? ' *' : ''}</p>
+                  {children
+                    .filter((c: any) => c.enabled)
+                    .map((child: any) => (
+                      <div key={child.key} className="space-y-1">
                         <label className="text-sm font-medium">
-                          {field.label}
-                          {addressCfg[field.key]?.required ? ' *' : ''}
+                          {child.label}
+                          {child.required ? ' *' : ''}
                         </label>
                         <Input
-                          required={addressCfg[field.key]?.required}
-                          value={values[`address_${field.key}`] || ''}
+                          required={child.required}
+                          value={values[`address_${child.key}`] || ''}
                           onChange={(e) =>
                             setValues((prev) => ({
                               ...prev,
-                              [`address_${field.key}`]: e.target.value,
+                              [`address_${child.key}`]: e.target.value,
                             }))
                           }
                         />
                       </div>
                     ))}
-                  </div>
-                )
-              }
-
-              return (
-                <div key={key} className="space-y-1">
-                  <label className="text-sm font-medium">
-                    {label}{cfg.required ? ' *' : ''}
-                  </label>
-                  <Input
-                    type={key === 'email' ? 'email' : key === 'phone' || key === 'work_phone' ? 'tel' : key === 'date_of_birth' ? 'date' : 'text'}
-                    required={cfg.required}
-                    value={values[key] || ''}
-                    onChange={(e) =>
-                      setValues((prev) => ({
-                        ...prev,
-                        [key]: e.target.value,
-                      }))
-                    }
-                    placeholder={
-                      key === 'email'
-                        ? 'you@example.com'
-                        : key === 'phone' || key === 'work_phone'
-                        ? '+1 (555) 123-4567'
-                        : key === 'title' || key === 'job_title'
-                        ? 'e.g., Marketing Manager'
-                        : key === 'location' || key === 'country'
-                        ? 'City, Country'
-                        : ''
-                    }
-                  />
                 </div>
               )
-            })}
+            }
+
+            return (
+              <div key={cfg.key} className="space-y-1">
+                <label className="text-sm font-medium">
+                  {cfg.label}{cfg.required ? ' *' : ''}
+                </label>
+                <Input
+                  type={cfg.type === 'email' ? 'email' : cfg.type === 'tel' ? 'tel' : cfg.type === 'date' ? 'date' : 'text'}
+                  required={cfg.required}
+                  value={values[cfg.key] || ''}
+                  onChange={(e) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      [cfg.key]: e.target.value,
+                    }))
+                  }
+                  placeholder={
+                    cfg.key === 'email'
+                      ? 'you@example.com'
+                      : cfg.key === 'phone' || cfg.key === 'work_phone'
+                      ? '+1 (555) 123-4567'
+                      : cfg.key === 'job_title' || cfg.key === 'title'
+                      ? 'e.g., Marketing Manager'
+                      : cfg.key === 'location' || cfg.key === 'country'
+                      ? 'City, Country'
+                      : ''
+                  }
+                />
+              </div>
+            )
+          })}
           <div className="text-xs text-muted-foreground">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked readOnly className="h-3 w-3" />
