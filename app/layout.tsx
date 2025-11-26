@@ -1,8 +1,5 @@
 import type { Metadata } from 'next'
-import { Rubik } from 'next/font/google'
 import './globals.css'
-
-const rubik = Rubik({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'AwareHub - Awareness as a Service',
@@ -16,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={rubik.className}>{children}</body>
+      <body className="font-sans">{children}</body>
     </html>
   )
 }

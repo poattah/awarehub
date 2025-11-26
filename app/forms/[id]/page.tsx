@@ -179,17 +179,26 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex items-center justify-center px-4 py-10">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-10"
+      style={{ backgroundColor: form.settings?.bg_color || '#f5f5f5' }}
+    >
       <div className="w-full max-w-3xl space-y-4">
         {form.settings?.banner_url && (
-          <div className="w-full rounded-2xl overflow-hidden border border-border/70 shadow-soft-lg">
+          <div
+            className="w-full rounded-2xl overflow-hidden border border-border/70 shadow-soft-lg"
+            style={{ backgroundColor: form.settings?.banner_bg_color || undefined }}
+          >
             <div
               className="h-40 bg-cover bg-center"
               style={{ backgroundImage: `url(${form.settings.banner_url})` }}
             />
           </div>
         )}
-        <Card className="w-full border-border/70 p-6 shadow-soft-lg bg-white">
+        <Card
+          className="w-full border-border/70 p-6 shadow-soft-lg"
+          style={{ backgroundColor: form.settings?.form_bg_color || '#ffffff' }}
+        >
           <div className="space-y-2 mb-4 text-center">
             {form.settings?.logo_url && (
               <div className="flex justify-center mb-2">
@@ -295,7 +304,15 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           {submitted && <p className="text-sm text-green-600">{submitted}</p>}
-          <Button type="submit" disabled={submitting} className="w-full">
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="w-full"
+            style={{
+              backgroundColor: form.settings?.button_bg_color || undefined,
+              color: form.settings?.button_text_color || undefined,
+            }}
+          >
             {submitting ? 'Submitting...' : 'Submit'}
           </Button>
         </form>

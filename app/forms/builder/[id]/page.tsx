@@ -297,6 +297,40 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
                   placeholder="https://..."
                 />
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Page background</label>
+                  <Input
+                    type="color"
+                    value={settings.bg_color || '#f5f5f5'}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, bg_color: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Form background</label>
+                  <Input
+                    type="color"
+                    value={settings.form_bg_color || '#ffffff'}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, form_bg_color: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Button color</label>
+                  <Input
+                    type="color"
+                    value={settings.button_bg_color || '#2563eb'}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, button_bg_color: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Button text</label>
+                  <Input
+                    type="color"
+                    value={settings.button_text_color || '#ffffff'}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, button_text_color: e.target.value }))}
+                  />
+                </div>
+              </div>
             </div>
           </Card>
           <Card className="border-border/60 p-4 shadow-soft-lg">

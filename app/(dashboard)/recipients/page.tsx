@@ -130,44 +130,9 @@ export default function RecipientsPage() {
   const [signupAllowDuplicates, setSignupAllowDuplicates] = useState(false)
   const [signupConsentText, setSignupConsentText] = useState('I agree to receive updates from this organization.')
   const [signupStatus, setSignupStatus] = useState<string | null>(null)
-  type FieldDef = {
-    key: string
-    label: string
-    type: 'email' | 'text' | 'tel' | 'date' | 'select' | 'address'
-    enabled: boolean
-    required: boolean
-    options?: string[]
-    children?: FieldDef[]
-  }
-  const defaultFields: FieldDef[] = [
+  const baseSignupFields = [
     { key: 'email', label: 'Email', type: 'email', enabled: true, required: true },
-    { key: 'first_name', label: 'First name', type: 'text', enabled: true, required: false },
-    { key: 'last_name', label: 'Last name', type: 'text', enabled: true, required: false },
-    { key: 'phone', label: 'Phone', type: 'tel', enabled: true, required: false },
-    { key: 'country', label: 'Country', type: 'text', enabled: true, required: false },
-    { key: 'date_of_birth', label: 'Date of birth', type: 'date', enabled: false, required: false },
-    { key: 'gender', label: 'Gender', type: 'select', options: ['male','female','non-binary','prefer_not_to_say','other'], enabled: false, required: false },
-    {
-      key: 'address',
-      label: 'Address',
-      type: 'address',
-      enabled: false,
-      required: false,
-      children: [
-        { key: 'street_address', label: 'Street address', type: 'text', enabled: true, required: false },
-        { key: 'apartment', label: 'Apartment', type: 'text', enabled: false, required: false },
-        { key: 'city', label: 'City', type: 'text', enabled: true, required: false },
-        { key: 'state', label: 'State', type: 'text', enabled: true, required: false },
-        { key: 'postal_code', label: 'Postal code', type: 'text', enabled: true, required: false },
-      ],
-    },
-    { key: 'job_title', label: 'Job title', type: 'text', enabled: false, required: false },
-    { key: 'company_name', label: 'Company name', type: 'text', enabled: false, required: false },
-    { key: 'industry', label: 'Industry', type: 'text', enabled: false, required: false },
-    { key: 'team_size', label: 'Team size', type: 'text', enabled: false, required: false },
-    { key: 'work_phone', label: 'Work phone', type: 'tel', enabled: false, required: false },
   ]
-  const [signupFields, setSignupFields] = useState<FieldDef[]>(defaultFields)
 
   const listSource = remoteLists.length ? remoteLists : lists
 
@@ -828,96 +793,6 @@ export default function RecipientsPage() {
                 <Label>Consent text</Label>
                 <Input value={signupConsentText} onChange={(e) => setSignupConsentText(e.target.value)} />
               </div>
-              <div className="space-y-2 rounded-xl border border-border/60 bg-muted/30 p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">Fields (drag to reorder)</p>
-                  <p className="text-xs text-muted-foreground">Email is fixed first</p>
-                </div>
-                <div className="space-y-2">
-                  {signupFields.map((field, idx) => (
-                    <div
-                      key={field.key}
-                      className="flex items-center justify-between rounded-lg border border-border/60 bg-white px-3 py-2 shadow-sm"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col gap-1">
-                          <button
-                            className="text-xs text-muted-foreground disabled:opacity-40"
-                            disabled={idx === 0}
-                            onClick={() => {
-                              if (idx === 0) return
-                              setSignupFields((prev) => {
-                                const next = [...prev]
-                                const [removed] = next.splice(idx, 1)
-                                next.splice(idx - 1, 0, removed)
-                                return next
-                              })
-                            }}
-                          >
-                            ↑
-                          </button>
-                          <button
-                            className="text-xs text-muted-foreground disabled:opacity-40"
-                            disabled={idx === signupFields.length - 1}
-                            onClick={() => {
-                              if (idx === signupFields.length - 1) return
-                              setSignupFields((prev) => {
-                                const next = [...prev]
-                                const [removed] = next.splice(idx, 1)
-                                next.splice(idx + 1, 0, removed)
-                                return next
-                              })
-                            }}
-                          >
-                            ↓
-                          </button>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold">{field.label}</p>
-                          <p className="text-xs text-muted-foreground capitalize">{field.type}</p>
-                          {field.type === 'address' && <p className="text-[11px] text-muted-foreground">Includes street, apartment, city, state, postal code</p>}
-                          {field.type === 'select' && field.options && (
-                            <p className="text-[11px] text-muted-foreground">Options: {field.options.join(', ')}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <label className="flex items-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={field.enabled}
-                            onChange={(e) =>
-                              setSignupFields((prev) => {
-                                const next = [...prev]
-                                next[idx] = { ...field, enabled: e.target.checked }
-                                return next
-                              })
-                            }
-                            className="h-4 w-4"
-                          />
-                          Enabled
-                        </label>
-                        <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <input
-                            type="checkbox"
-                            checked={field.required}
-                            disabled={!field.enabled}
-                            onChange={(e) =>
-                              setSignupFields((prev) => {
-                                const next = [...prev]
-                                next[idx] = { ...field, required: e.target.checked }
-                                return next
-                              })
-                            }
-                            className="h-4 w-4"
-                          />
-                          Required
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -944,15 +819,7 @@ export default function RecipientsPage() {
                     name: signupName.trim(),
                     description: signupDescription.trim(),
                     target_list_id: signupTargetList || null,
-                    fields: signupFields.map((f) => ({
-                      key: f.key,
-                      label: f.label,
-                      type: f.type,
-                      enabled: f.enabled,
-                      required: f.required,
-                      options: f.options,
-                      children: f.children,
-                    })),
+                    fields: baseSignupFields,
                     settings: {
                       double_opt_in: false,
                       allow_duplicates: signupAllowDuplicates,
