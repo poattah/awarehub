@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { supabase } from '@/lib/supabase'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { SignupFormBuilder } from '@/components/growth/signup-form-builder'
 import {
   Plus,
   Search,
@@ -29,6 +30,9 @@ import {
   Save,
   MoreVertical,
   Trash2,
+  FormInput,
+  BarChart3,
+  ExternalLink,
 } from 'lucide-react'
 
 type List = {
@@ -119,6 +123,9 @@ export default function RecipientsPage() {
   const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([{ key: '', value: '' }])
   const menuRefs = useRef<Record<string | number, HTMLDivElement | null>>({})
   const triggerRefs = useRef<Record<string | number, HTMLButtonElement | null>>({})
+  const [showSignupFormBuilder, setShowSignupFormBuilder] = useState(false)
+  const [signupForms, setSignupForms] = useState<any[]>([])
+  const [formsLoading, setFormsLoading] = useState(false)
 
   const listSource = remoteLists.length ? remoteLists : lists
 
@@ -206,6 +213,25 @@ export default function RecipientsPage() {
   useEffect(() => {
     fetchLists()
   }, [fetchLists])
+
+  const fetchSignupForms = useCallback(async () => {
+    setFormsLoading(true)
+    const { data, error } = await supabase
+      .from('signup_forms')
+      .select('id, name, description, status, submission_count, created_at')
+      .order('created_at', { ascending: false })
+
+    if (!error && data) {
+      setSignupForms(data)
+    }
+    setFormsLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'growth') {
+      fetchSignupForms()
+    }
+  }, [activeTab, fetchSignupForms])
 
   const fetchContacts = async (listId: string | number) => {
     setContactsLoading(true)
@@ -529,12 +555,106 @@ export default function RecipientsPage() {
           </div>
         ) : (
           <div className="p-4 space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <GrowthCard
-                title="Create signup form"
-                description="Capture new subscribers with branded forms and consent."
-                cta="Create"
-              />
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold">Signup Forms</h3>
+                <p className="text-sm text-muted-foreground">
+                  Create forms to capture new subscribers
+                </p>
+              </div>
+              <Button onClick={() => setShowSignupFormBuilder(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Signup Form
+              </Button>
+            </div>
+
+            {formsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-2">
+                <LoadingSpinner className="h-4 w-4" />
+                Loading forms...
+              </div>
+            ) : signupForms.length > 0 ? (
+              <div className="grid gap-3">
+                {signupForms.map((form) => (
+                  <Card key={form.id} className="p-4 border-border/60 shadow-soft hover:shadow-soft-lg transition">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <FormInput className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold">{form.name}</h4>
+                          {form.description && (
+                            <p className="text-sm text-muted-foreground">{form.description}</p>
+                          )}
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <BarChart3 className="h-3 w-3" />
+                              {form.submission_count || 0} submissions
+                            </div>
+                            <Badge
+                              variant={form.status === 'active' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {form.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`/forms/${form.id}`, '_blank')}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const embedCode = `<div id="awarehub-signup-form"></div>
+<script>
+  (function() {
+    var iframe = document.createElement('iframe');
+    iframe.src = '${window.location.origin}/forms/embed/${form.id}';
+    iframe.style.width = '100%';
+    iframe.style.border = 'none';
+    iframe.style.minHeight = '500px';
+    document.getElementById('awarehub-signup-form').appendChild(iframe);
+  })();
+</script>`
+                            navigator.clipboard.writeText(embedCode)
+                            alert('Embed code copied to clipboard!')
+                          }}
+                        >
+                          Copy Embed
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 border-border/60 border-dashed text-center space-y-3">
+                <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <FormInput className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">No signup forms yet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create your first form to start capturing subscribers
+                  </p>
+                </div>
+                <Button onClick={() => setShowSignupFormBuilder(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Form
+                </Button>
+              </Card>
+            )}
+
+            <div className="grid gap-4 md:grid-cols-3 mt-6">
               <GrowthCard
                 title="Preference pages"
                 description="Let people tailor topics: wellbeing, DEI, safety, compliance."
@@ -942,6 +1062,16 @@ export default function RecipientsPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {showSignupFormBuilder && (
+        <SignupFormBuilder
+          onClose={() => setShowSignupFormBuilder(false)}
+          onSuccess={() => {
+            fetchSignupForms()
+          }}
+          lists={listSource.map((l) => ({ id: String(l.id), name: l.name }))}
+        />
       )}
     </div>
   )
