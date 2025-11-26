@@ -22,54 +22,43 @@ async function getOrgIdFromUser(token?: string) {
   return profile?.organization_id || null
 }
 
-export async function GET(request: Request) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const auth = request.headers.get('authorization') || ''
   const token = auth.startsWith('Bearer ') ? auth.replace('Bearer ', '') : null
   const orgId = await getOrgIdFromUser(token || undefined)
   if (!orgId) return NextResponse.json({ ok: false, error: 'Missing organization or auth' }, { status: 401 })
 
   const supabase = createClient(supabaseUrl, serviceKey)
-  const { data, error } = await supabase
+  const body = await request.json()
+  const { role, status } = body as { role?: string; status?: string }
+
+  const updates: Record<string, any> = {}
+  if (role) updates.role = role
+  if (status) updates.status = status
+
+  const { error } = await supabase
     .from('team_invites')
-    .select('id, email, role, status, created_at, updated_at')
+    .update(updates)
+    .eq('id', params.id)
     .eq('organization_id', orgId)
-    .order('created_at', { ascending: false })
+
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true, data })
+  return NextResponse.json({ ok: true })
 }
 
-export async function POST(request: Request) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   const auth = request.headers.get('authorization') || ''
   const token = auth.startsWith('Bearer ') ? auth.replace('Bearer ', '') : null
   const orgId = await getOrgIdFromUser(token || undefined)
   if (!orgId) return NextResponse.json({ ok: false, error: 'Missing organization or auth' }, { status: 401 })
 
-  const body = await request.json()
-  const { email, role } = body as { email?: string; role?: string }
-  if (!email || !role) return NextResponse.json({ ok: false, error: 'Email and role required' }, { status: 400 })
-
   const supabase = createClient(supabaseUrl, serviceKey)
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('team_invites')
-    .insert({ organization_id: orgId, email, role })
-    .select('id, email, role, status, created_at, updated_at')
-    .single()
+    .delete()
+    .eq('id', params.id)
+    .eq('organization_id', orgId)
+
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-
-  // Fire-and-forget email invite via internal Resend route
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  const inviteLink = `${appUrl}/auth/invite?email=${encodeURIComponent(email)}`
-  const subject = 'You have been invited to AwareHub'
-  const html = `<p>You have been invited to join AwareHub.</p><p>Role: <strong>${role}</strong></p><p><a href="${inviteLink}">Accept invite</a></p>`
-  try {
-    await fetch(`${appUrl}/api/integrations/resend/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: email, subject, html }),
-    })
-  } catch (e) {
-    console.warn('Invite email failed to send', e)
-  }
-
-  return NextResponse.json({ ok: true, data })
+  return NextResponse.json({ ok: true })
 }

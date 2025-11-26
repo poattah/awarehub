@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
-import { Users, Loader2, Trash2, Shield } from "lucide-react"
+import { Users, Loader2, Trash2, Shield, Plus } from "lucide-react"
 
 type TeamMember = {
   id: string
@@ -21,6 +23,8 @@ export function TeamSettings() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [newEmail, setNewEmail] = useState('')
+  const [newRole, setNewRole] = useState<TeamMember['role']>('viewer')
 
   useEffect(() => {
     fetchTeam()
@@ -28,16 +32,10 @@ export function TeamSettings() {
 
   const fetchTeam = async () => {
     try {
-      const token = localStorage.getItem('supabase-token')
-      if (!token) {
-        setLoading(false)
-        return
-      }
-
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
       const response = await fetch('/api/settings/team', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
       })
 
       const result = await response.json()
@@ -56,17 +54,13 @@ export function TeamSettings() {
     setMessage(null)
 
     try {
-      const token = localStorage.getItem('supabase-token')
-      if (!token) {
-        setMessage({ type: 'error', text: 'Not authenticated' })
-        return
-      }
-
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
       const response = await fetch(`/api/settings/team/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ role: newRole })
       })
@@ -92,17 +86,11 @@ export function TeamSettings() {
     setMessage(null)
 
     try {
-      const token = localStorage.getItem('supabase-token')
-      if (!token) {
-        setMessage({ type: 'error', text: 'Not authenticated' })
-        return
-      }
-
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
       const response = await fetch(`/api/settings/team/${userId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
       })
 
       const result = await response.json()
@@ -217,14 +205,69 @@ export function TeamSettings() {
                   </div>
                 </div>
               ))
-            )}
-          </div>
+              )}
+            </div>
 
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium mb-1">Role Permissions:</p>
+            <div className="mt-6 border-t pt-4 space-y-3">
+              <p className="text-sm font-semibold">Invite a team member</p>
+              <div className="grid gap-3 md:grid-cols-[1.6fr,1fr,auto] items-center">
+                <Input
+                  type="email"
+                  placeholder="email@company.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                />
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as TeamMember['role'])}
+                  className="w-full rounded-lg border border-border/60 bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="org_admin">Admin</option>
+                  <option value="campaign_admin">Campaign Admin</option>
+                  <option value="editor">Editor</option>
+                  <option value="viewer">Viewer</option>
+                </select>
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    setMessage(null)
+                    if (!newEmail.trim()) {
+                      setMessage({ type: 'error', text: 'Email is required' })
+                      return
+                    }
+                    const { data: sessionData } = await supabase.auth.getSession()
+                    const token = sessionData.session?.access_token
+                    const response = await fetch('/api/settings/team', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { Authorization: `Bearer ${token}` } : {})
+                      },
+                      body: JSON.stringify({ email: newEmail.trim(), role: newRole })
+                    })
+                    const result = await response.json()
+                    if (result.ok) {
+                      setMessage({ type: 'success', text: 'Invite created' })
+                      setNewEmail('')
+                      setNewRole('viewer')
+                      fetchTeam()
+                    } else {
+                      setMessage({ type: 'error', text: result.error || 'Failed to invite member' })
+                    }
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Invite
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Invites are stored with role; connect auth later to finalize accounts.</p>
+            </div>
+
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <div className="flex items-start gap-3">
+                <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium mb-1">Role Permissions:</p>
                 <ul className="space-y-1">
                   <li><span className="font-medium">Admin:</span> Full access to all settings and features</li>
                   <li><span className="font-medium">Campaign Admin:</span> Can create and manage campaigns</li>
