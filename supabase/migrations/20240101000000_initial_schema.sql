@@ -778,6 +778,7 @@ CREATE TABLE IF NOT EXISTS public.recipient_contacts (
   location TEXT,
   tags TEXT[] DEFAULT '{}',
   channels TEXT[] DEFAULT '{}',
+  metadata JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

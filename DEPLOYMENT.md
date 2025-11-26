@@ -117,6 +117,20 @@ vercel
    - Optional: `cc`, `bcc`, `reply_to`
 4. Keep the API key server-only; call this route from the app, not Resend directly.
 
+#### SMS via Twilio
+
+1. Add to `.env.local` / Vercel:
+   ```env
+   TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxx
+   TWILIO_AUTH_TOKEN=your_auth_token
+   TWILIO_MESSAGING_SERVICE_SID=MGxxxxxxxxxxxx   # recommended
+   ```
+2. Use the internal route (server-side only):
+   - `POST /api/integrations/twilio/send`
+   - JSON: `{"to":"+18777804236","body":"Ahoy 👋"}` (uses `TWILIO_MESSAGING_SERVICE_SID` by default)
+   - Optional: `messagingServiceSid` (override) or `from` (if not using messaging service)
+3. Keep credentials server-only; do not call Twilio directly from the client.
+
 #### Microsoft Teams/Graph API
 
 1. Go to Azure Portal > App Registrations

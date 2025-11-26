@@ -187,6 +187,7 @@ export interface Database {
           location: string | null
           tags: string[]
           channels: string[]
+          metadata: Json
           created_at: string
           updated_at: string
         }
@@ -194,6 +195,7 @@ export interface Database {
           phone?: string | null
           title?: string | null
           location?: string | null
+          metadata?: Json
         }
         Update: Partial<Database['public']['Tables']['recipient_contacts']['Insert']>
       }

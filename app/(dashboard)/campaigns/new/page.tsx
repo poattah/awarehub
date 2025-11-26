@@ -75,6 +75,9 @@ export default function CampaignBuilderPage() {
 
   // SMS specific
   const [smsMessage, setSmsMessage] = useState('')
+  const [smsFrom, setSmsFrom] = useState('')
+  const [smsPreview, setSmsPreview] = useState('Keep it short and clear.')
+  const [smsTo, setSmsTo] = useState('')
 
   // Slack specific
   const [slackChannel, setSlackChannel] = useState('')
@@ -92,6 +95,15 @@ export default function CampaignBuilderPage() {
   ]
 
   const [showEmailDesigner, setShowEmailDesigner] = useState(false)
+  const [showSmsDesigner, setShowSmsDesigner] = useState(false)
+  const [showSendModal, setShowSendModal] = useState(false)
+  const [sendState, setSendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [sendError, setSendError] = useState<string | null>(null)
+  const [savingDraft, setSavingDraft] = useState(false)
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const draftLoaded = useRef(false)
+  const [campaignId, setCampaignId] = useState<string | null>(null)
+  const [campaignStatus, setCampaignStatus] = useState<'draft' | 'active' | 'scheduled' | 'completed'>('draft')
 
   const toggleSelection = (list: string[], value: string, setter: (next: string[]) => void) => {
     if (list.includes(value)) {
@@ -115,6 +127,26 @@ export default function CampaignBuilderPage() {
     }
   }
 
+  const handleSendCampaign = () => {
+    if (assetType === 'sms' && !smsTo.trim()) {
+      setSendError('Add a recipient phone number for SMS.')
+      setShowSendModal(true)
+      setSendState('error')
+      return
+    }
+    setSendError(null)
+    setShowSendModal(true)
+    setSendState('sending')
+    if (assetType === 'sms') {
+      sendSms()
+    } else {
+      persistDraft().then(() => {
+        setCampaignStatus('active')
+        setSendState('sent')
+      })
+    }
+  }
+
   const isStepComplete = (stepKey: string) => {
     switch (stepKey) {
       case 'setup':
@@ -135,6 +167,184 @@ export default function CampaignBuilderPage() {
     review: 'Review and send'
   }
 
+  const draftKey = 'campaign-builder-draft'
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem(draftKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.name) setName(parsed.name)
+        if (parsed.summary) setSummary(parsed.summary)
+        if (parsed.launchDate) setLaunchDate(parsed.launchDate)
+        if (parsed.cadence) setCadence(parsed.cadence)
+        if (parsed.assetType) setAssetType(parsed.assetType)
+        if (Array.isArray(parsed.channels)) setChannels(parsed.channels)
+        if (Array.isArray(parsed.audience)) setAudience(parsed.audience)
+        if (parsed.theme) setTheme(parsed.theme)
+        if (parsed.tone) setTone(parsed.tone)
+        if (parsed.emailSubject) setEmailSubject(parsed.emailSubject)
+        if (parsed.emailPreviewText) setEmailPreviewText(parsed.emailPreviewText)
+        if (parsed.senderName) setSenderName(parsed.senderName)
+        if (parsed.senderEmail) setSenderEmail(parsed.senderEmail)
+        if (parsed.emailHeadline) setEmailHeadline(parsed.emailHeadline)
+        if (parsed.emailBody) setEmailBody(parsed.emailBody)
+        if (parsed.emailButton) setEmailButton(parsed.emailButton)
+        if (parsed.emailHero) setEmailHero(parsed.emailHero)
+        if (parsed.selectedTemplate) setSelectedTemplate(parsed.selectedTemplate)
+        if (parsed.smsMessage) setSmsMessage(parsed.smsMessage)
+        if (parsed.smsFrom) setSmsFrom(parsed.smsFrom)
+        if (parsed.smsPreview) setSmsPreview(parsed.smsPreview)
+        if (parsed.smsTo) setSmsTo(parsed.smsTo)
+        if (parsed.lastSavedAt) setLastSavedAt(parsed.lastSavedAt)
+      }
+    } catch {
+      // ignore malformed drafts
+    }
+    draftLoaded.current = true
+  }, [])
+
+  const persistDraft = async () => {
+    if (typeof window === 'undefined' || !draftLoaded.current) return
+    setSavingDraft(true)
+    const payload = {
+      name,
+      summary,
+      launchDate,
+      cadence,
+      assetType,
+      channels,
+      audience,
+      theme,
+      tone,
+      emailSubject,
+      emailPreviewText,
+      senderName,
+      senderEmail,
+      emailHeadline,
+      emailBody,
+      emailButton,
+      emailHero,
+      selectedTemplate,
+      smsMessage,
+      smsFrom,
+      smsPreview,
+      smsTo,
+      lastSavedAt: new Date().toISOString(),
+    }
+    localStorage.setItem(draftKey, JSON.stringify(payload))
+    setLastSavedAt(payload.lastSavedAt)
+    try {
+      const res = await fetch('/api/campaigns/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: campaignId || undefined,
+          name,
+          summary,
+          launchDate,
+          cadence,
+          assetType,
+          channels,
+          audience,
+          theme,
+          tone,
+          status: campaignStatus,
+          metadata: {
+            emailSubject,
+            emailPreviewText,
+            senderName,
+            senderEmail,
+            emailHeadline,
+            emailBody,
+            emailButton,
+            emailHero,
+            selectedTemplate,
+            smsMessage,
+            smsFrom,
+            smsPreview,
+            smsTo,
+          },
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && data?.id) {
+        setCampaignId(data.id)
+        if (data.status) setCampaignStatus(data.status)
+      }
+    } catch {
+      // ignore network errors for autosave
+    }
+    setSavingDraft(false)
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !draftLoaded.current) return
+    const timeout = setTimeout(() => {
+      persistDraft()
+    }, 800)
+
+    return () => clearTimeout(timeout)
+  }, [
+    name,
+    summary,
+    launchDate,
+    cadence,
+    assetType,
+    channels,
+    audience,
+    theme,
+    tone,
+    emailSubject,
+    emailPreviewText,
+    senderName,
+    senderEmail,
+    emailHeadline,
+    emailBody,
+    emailButton,
+    emailHero,
+    selectedTemplate,
+    smsMessage,
+    smsFrom,
+    smsPreview,
+    smsTo,
+  ])
+
+  const formatSavedTime = (ts: string | null) => {
+    if (!ts) return ''
+    try {
+      return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } catch {
+      return ''
+    }
+  }
+
+  const sendSms = async () => {
+    setSendError(null)
+    try {
+      const res = await fetch('/api/integrations/twilio/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: smsTo,
+          body: smsMessage || 'Hi there from AwareHub',
+          from: smsFrom || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.ok) {
+        throw new Error(data?.error || 'Failed to send SMS')
+      }
+      setCampaignStatus('active')
+      persistDraft()
+      setSendState('sent')
+    } catch (err: any) {
+      setSendError(err.message || 'Failed to send SMS')
+      setSendState('error')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -153,7 +363,11 @@ export default function CampaignBuilderPage() {
               <Globe2 className="h-4 w-4" />
               Preview Campaign
             </button>
-            <Button size="sm">Save Changes</Button>
+            <div className="text-xs text-muted-foreground">
+              {savingDraft ? 'Saving...' : lastSavedAt ? `Saved ${formatSavedTime(lastSavedAt)}` : 'Autosave enabled'}
+            </div>
+            <Badge variant="outline">{campaignStatus || 'draft'}</Badge>
+            <Button size="sm" onClick={persistDraft}>Save Now</Button>
           </div>
         </div>
       </div>
@@ -295,16 +509,23 @@ export default function CampaignBuilderPage() {
                   <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Mail className="h-6 w-6 text-primary" />
+                        {assetType === 'email' ? <Mail className="h-6 w-6 text-primary" /> : <MessageSquare className="h-6 w-6 text-primary" />}
                       </div>
                       <div>
                         <p className="font-semibold">Customize Asset</p>
                         <p className="text-sm text-muted-foreground">
-                          Email Design — personalize subject, sender, hero, and CTA.
+                          {assetType === 'email'
+                            ? 'Email Design — personalize subject, sender, hero, and CTA.'
+                            : 'SMS Design — set sender, message, and preview.'}
                         </p>
                       </div>
                     </div>
-                    <Button onClick={() => setShowEmailDesigner(true)}>
+                    <Button
+                      onClick={() => {
+                        if (assetType === 'email') setShowEmailDesigner(true)
+                        if (assetType === 'sms') setShowSmsDesigner(true)
+                      }}
+                    >
                       Edit
                     </Button>
                   </div>
@@ -454,7 +675,7 @@ export default function CampaignBuilderPage() {
                     <p className="text-sm text-muted-foreground mb-3">
                       Ready to launch? Your campaign will be sent to all selected recipients.
                     </p>
-                    <Button size="lg" className="w-full">
+                    <Button size="lg" className="w-full" onClick={handleSendCampaign}>
                       <Send className="mr-2 h-4 w-4" />
                       Send Campaign
                     </Button>
@@ -487,7 +708,7 @@ export default function CampaignBuilderPage() {
             </Button>
           ) : (
             <Button
-              onClick={() => alert('Campaign sent!')}
+              onClick={handleSendCampaign}
               className="inline-flex items-center gap-2"
             >
               Send Campaign
@@ -631,6 +852,181 @@ export default function CampaignBuilderPage() {
                     </div>
                   </Card>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSmsDesigner && (
+        <div className="fixed inset-0 z-40 flex bg-black/60">
+          <div className="w-full lg:w-[320px] bg-card border-r border-border/60 p-4 space-y-3 overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">SMS blocks</h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowSmsDesigner(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>Keep it concise. You can insert short links and personalization tags (e.g., @firstname).</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Quick presets</p>
+              <div className="grid gap-2">
+                {[
+                  'Reminder: Join us today at 3 PM for the awareness session.',
+                  'Hi @firstname, new resources are live. Check the link.',
+                  'Action needed: Complete the quiz by Friday.',
+                ].map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => {
+                      setSmsMessage(preset)
+                      setSmsPreview(preset)
+                    }}
+                    className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-left text-sm hover:border-primary/40"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 bg-background overflow-y-auto">
+            <div className="max-w-5xl mx-auto p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">SMS template</p>
+                  <h3 className="text-xl font-bold">Design canvas</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowSmsDesigner(false)}>Cancel</Button>
+                  <Button onClick={() => setShowSmsDesigner(false)}>Save & return</Button>
+                </div>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-[1fr,0.8fr]">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label>To (E.164 format)</Label>
+                    <Input
+                      value={smsTo}
+                      onChange={(e) => setSmsTo(e.target.value)}
+                      placeholder="+18777804236"
+                    />
+                    <p className="text-xs text-muted-foreground">Required to send the SMS.</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>From (Messaging Service SID or phone)</Label>
+                    <Input
+                      value={smsFrom}
+                      onChange={(e) => setSmsFrom(e.target.value)}
+                      placeholder="e.g., MGxxxx or +15551234567"
+                    />
+                    <p className="text-xs text-muted-foreground">If empty, backend uses TWILIO_MESSAGING_SERVICE_SID.</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Message</Label>
+                    <Textarea
+                      rows={5}
+                      value={smsMessage}
+                      onChange={(e) => {
+                        setSmsMessage(e.target.value)
+                        setSmsPreview(e.target.value)
+                      }}
+                      placeholder="Keep it short and clear..."
+                      maxLength={320}
+                    />
+                    <p className="text-xs text-muted-foreground">{smsMessage.length}/320 characters</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">Preview</p>
+                    <div className="flex gap-2 text-xs text-muted-foreground">
+                      <span className="rounded-full border px-2 py-1 bg-muted/40">Mobile</span>
+                    </div>
+                  </div>
+                  <Card className="border-border/60 shadow-soft-lg overflow-hidden">
+                    <div className="p-4 space-y-3">
+                      <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-4">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{smsPreview || 'Your SMS preview will appear here.'}</p>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        From: {smsFrom || 'Messaging Service'}<br />
+                        To: {smsTo || 'Not set'}<br />
+                        Est. segments: {Math.max(1, Math.ceil((smsMessage.length || 1) / 160))}
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSendModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card shadow-soft-lg overflow-hidden relative">
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute -left-6 top-6 h-3 w-3 rounded-full bg-primary/40 animate-ping" />
+              <div className="absolute -right-6 top-10 h-3 w-3 rounded-full bg-amber-400/60 animate-ping" />
+              <div className="absolute left-10 bottom-8 h-3 w-3 rounded-full bg-emerald-400/60 animate-ping" />
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Sending campaign</p>
+                <Button variant="ghost" size="icon" onClick={() => { setShowSendModal(false); setSendState('idle') }}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative h-28 w-28 flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse" />
+                  <div className="absolute h-20 w-28 rounded-lg bg-gradient-to-br from-orange-300 via-pink-400 to-rose-500 animate-bounce" />
+                  <div className="relative h-16 w-24 rounded-md bg-white border border-border/60 shadow-md flex items-center justify-center">
+                    <Mail className="h-8 w-8 text-primary" />
+                  </div>
+                  {sendState === 'sent' && (
+                    <div className="absolute -right-2 -bottom-2 h-8 w-8 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center shadow">
+                      <Check className="h-5 w-5 text-emerald-700" />
+                    </div>
+                  )}
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="text-lg font-semibold">
+                    {sendState === 'sent' ? 'Campaign sent!' : sendState === 'error' ? 'Send failed' : 'Launching your campaign...'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {sendState === 'sent'
+                      ? 'Your campaign is on its way to all selected recipients.'
+                      : sendState === 'error'
+                      ? sendError || 'We could not send your campaign. Check the SMS fields and try again.'
+                      : 'Packaging assets, syncing recipients, and dispatching to channels.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className={`h-2 w-2 rounded-full ${sendState === 'error' ? 'bg-red-500' : 'bg-primary'} animate-pulse`} />
+                  <span>
+                    {sendState === 'sent'
+                      ? 'Completed'
+                      : sendState === 'error'
+                      ? 'Error'
+                      : 'Sending...'}
+                  </span>
+                </div>
+                {sendState === 'sent' && (
+                  <Button className="w-full" onClick={() => { setShowSendModal(false); setSendState('idle') }}>
+                    View campaign log
+                  </Button>
+                )}
+                {sendState === 'error' && (
+                  <Button className="w-full" variant="outline" onClick={() => { setSendState('sending'); sendSms() }}>
+                    Retry send
+                  </Button>
+                )}
               </div>
             </div>
           </div>

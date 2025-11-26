@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { supabase } from '@/lib/supabase'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Plus,
   Search,
@@ -47,6 +49,7 @@ type Contact = {
   location: string
   tags: string[]
   channels: string
+  metadata?: Record<string, string>
 }
 
 const lists: List[] = [
@@ -92,6 +95,26 @@ export default function RecipientsPage() {
   const [contactsLoading, setContactsLoading] = useState(false)
   const [contactsError, setContactsError] = useState<string | null>(null)
   const [autoSeedAttempted, setAutoSeedAttempted] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [showListModal, setShowListModal] = useState(false)
+  const [newListName, setNewListName] = useState('')
+  const [newListType, setNewListType] = useState<'List' | 'Segment'>('List')
+  const [newListTags, setNewListTags] = useState('')
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importTargetList, setImportTargetList] = useState<string | number | ''>('')
+  const [importStatus, setImportStatus] = useState<string | null>(null)
+  const [savingList, setSavingList] = useState(false)
+  const [showContactModal, setShowContactModal] = useState(false)
+  const [newContact, setNewContact] = useState<Omit<Contact, 'id' | 'channels'>>({
+    name: '',
+    email: '',
+    phone: '',
+    title: '',
+    location: '',
+    tags: [],
+    metadata: {},
+  })
+  const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([{ key: '', value: '' }])
   const menuRefs = useRef<Record<string | number, HTMLDivElement | null>>({})
   const triggerRefs = useRef<Record<string | number, HTMLButtonElement | null>>({})
 
@@ -130,9 +153,8 @@ export default function RecipientsPage() {
     return () => document.removeEventListener('mousedown', handleClickAway)
   }, [openMenuId])
 
-  useEffect(() => {
-    let active = true
-    const fetchLists = async (skipSeed?: boolean) => {
+  const fetchLists = useCallback(
+    async (skipSeed?: boolean) => {
       setListLoading(true)
       setListError(null)
 
@@ -141,8 +163,6 @@ export default function RecipientsPage() {
         .select('id, name, type, tags, member_count, created_at')
         .order('created_at', { ascending: false })
         .limit(20)
-
-      if (!active) return
 
       if (error) {
         setListError('Supabase fetch failed; showing sample lists.')
@@ -177,14 +197,13 @@ export default function RecipientsPage() {
 
       setListError('No lists found in Supabase; showing sample lists.')
       setListLoading(false)
-    }
+    },
+    [autoSeedAttempted]
+  )
 
+  useEffect(() => {
     fetchLists()
-
-    return () => {
-      active = false
-    }
-  }, [autoSeedAttempted])
+  }, [fetchLists])
 
   const fetchContacts = async (listId: string | number) => {
     setContactsLoading(true)
@@ -204,19 +223,20 @@ export default function RecipientsPage() {
     }
 
     if (data && data.length) {
-      const mapped: Contact[] = data
-        .map((row) => row.contact)
-        .filter(Boolean)
-        .map((c) => ({
-          id: c!.id,
-          name: c!.full_name,
-          email: c!.email,
-          phone: c!.phone || '',
-          title: c!.title || '',
-          location: c!.location || '',
-          tags: (c!.tags as string[]) || [],
-          channels: Array.isArray(c!.channels) ? c!.channels.join(' + ') : '',
-        }))
+          const mapped: Contact[] = data
+            .map((row) => row.contact)
+            .filter(Boolean)
+            .map((c) => ({
+              id: c!.id,
+              name: c!.full_name,
+              email: c!.email,
+              phone: c!.phone || '',
+              title: c!.title || '',
+              location: c!.location || '',
+              tags: (c!.tags as string[]) || [],
+              channels: Array.isArray(c!.channels) ? c!.channels.join(' + ') : '',
+              metadata: (c as any)?.metadata || {},
+            }))
       setContacts(mapped)
     } else {
       setContactsError('No contacts found; showing sample contacts.')
@@ -235,18 +255,18 @@ export default function RecipientsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowImportModal(true)}>
             <Upload className="mr-2 h-4 w-4" />
             Import CSV
           </Button>
-          <Button>
+          <Button onClick={() => setShowListModal(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New list / segment
           </Button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border/60 bg-card shadow-soft-lg overflow-hidden">
+      <div className="rounded-2xl border border-border/60 bg-card shadow-soft-lg overflow-visible">
         <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/40 px-4 py-3">
           <button
             onClick={() => setActiveTab('lists')}
@@ -400,19 +420,19 @@ export default function RecipientsPage() {
               <span>/</span>
               <span className="text-foreground font-semibold">{listSource.find((l) => l.id === selectedListId)?.name}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold">Contacts in {listSource.find((l) => l.id === selectedListId)?.name}</p>
-                <p className="text-xs text-muted-foreground">Drill down, edit inline, or preview a contact.</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Contacts in {listSource.find((l) => l.id === selectedListId)?.name}</p>
+                  <p className="text-xs text-muted-foreground">Drill down, edit inline, or preview a contact.</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setViewMode('lists')}>Back to lists</Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowContactModal(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add contact
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setViewMode('lists')}>Back to lists</Button>
-                <Button variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add contact
-                </Button>
-              </div>
-            </div>
 
             <div className="grid grid-cols-[1.6fr,1.8fr,1.3fr,1fr,0.9fr] gap-3 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
               <span>Name</span>
@@ -539,6 +559,326 @@ export default function RecipientsPage() {
       </Card>
 
       {previewContact && <RecipientPreview contact={previewContact} onClose={() => setPreviewContact(null)} />}
+
+      {showListModal && (
+        <Modal onClose={() => setShowListModal(false)}>
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">New list / segment</p>
+                <p className="text-sm text-muted-foreground">Create a destination for contacts.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowListModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Name</Label>
+                <Input value={newListName} onChange={(e) => setNewListName(e.target.value)} placeholder="e.g., Field Team" />
+              </div>
+              <div className="space-y-1">
+                <Label>Type</Label>
+                <div className="flex gap-2">
+                  {(['List', 'Segment'] as const).map((t) => (
+                    <Button
+                      key={t}
+                      variant={newListType === t ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setNewListType(t)}
+                    >
+                      {t}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Tags (comma separated)</Label>
+                <Input value={newListTags} onChange={(e) => setNewListTags(e.target.value)} placeholder="Org-wide, Field" />
+              </div>
+              {listError && <p className="text-xs text-red-600">{listError}</p>}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setShowListModal(false)}>Cancel</Button>
+              <Button
+                onClick={async () => {
+                  if (!newListName.trim()) {
+                    setListError('Name required')
+                    return
+                  }
+                  setSavingList(true)
+                  setListError(null)
+                  const { data, error } = await supabase
+                    .from('recipient_lists')
+                    .insert({
+                      name: newListName.trim(),
+                      type: newListType,
+                      tags: newListTags ? newListTags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+                    })
+                    .select('id, name, type, tags, member_count, created_at')
+                    .single()
+                  setSavingList(false)
+                  if (error || !data) {
+                    setListError(error?.message || 'Failed to create list')
+                    return
+                  }
+                  setRemoteLists((prev) => [{ id: data.id, name: data.name, type: data.type as 'List' | 'Segment', members: data.member_count ?? 0, created: data.created_at?.slice(0,10) || '', tags: data.tags || [] }, ...prev])
+                  setNewListName('')
+                  setNewListTags('')
+                  setShowListModal(false)
+                }}
+                disabled={savingList}
+              >
+                {savingList ? 'Saving...' : 'Create'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showImportModal && (
+        <Modal onClose={() => setShowImportModal(false)}>
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Import CSV</p>
+                <p className="text-sm text-muted-foreground">Columns: name,email,phone,title,location,tags,channels</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowImportModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Target list</Label>
+                <select
+                  value={importTargetList}
+                  onChange={(e) => setImportTargetList(e.target.value)}
+                  className="w-full rounded-xl border border-border/60 bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Select a list</option>
+                  {listSource.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>CSV file</Label>
+                <Input type="file" accept=".csv,text/csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
+              </div>
+              {importStatus && <p className="text-xs text-muted-foreground">{importStatus}</p>}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setShowImportModal(false)}>Cancel</Button>
+              <Button
+                onClick={async () => {
+                  if (!importFile || !importTargetList) {
+                    setImportStatus('Select a list and choose a CSV file.')
+                    return
+                  }
+                  setImportStatus('Parsing CSV...')
+                  const text = await importFile.text()
+                  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0)
+                  const headers = lines.shift()?.split(',').map((h) => h.trim().toLowerCase()) || []
+                  const rows = lines.map((line) => {
+                    const cols = line.split(',')
+                    const get = (key: string) => {
+                      const idx = headers.indexOf(key)
+                      return idx >= 0 ? cols[idx]?.trim() : ''
+                    }
+                    return {
+                      full_name: get('name'),
+                      email: get('email'),
+                      phone: get('phone'),
+                      title: get('title'),
+                      location: get('location'),
+                      tags: get('tags') ? get('tags').split('|').map((t) => t.trim()).filter(Boolean) : [],
+                      channels: get('channels') ? get('channels').split('|').map((t) => t.trim()).filter(Boolean) : [],
+                    }
+                  }).filter((row) => row.email)
+
+                  if (!rows.length) {
+                    setImportStatus('No valid rows found.')
+                    return
+                  }
+
+                  setImportStatus('Uploading contacts...')
+                  const { data: insertedContacts, error: contactsErr } = await supabase
+                    .from('recipient_contacts')
+                    .insert(rows)
+                    .select('id, email')
+
+                  if (contactsErr || !insertedContacts?.length) {
+                    setImportStatus(contactsErr?.message || 'Failed to import contacts')
+                    return
+                  }
+
+                  const memberships = insertedContacts.map((c: any) => ({
+                    list_id: importTargetList,
+                    contact_id: c.id,
+                  }))
+                  const { error: membershipErr } = await supabase
+                    .from('recipient_contact_memberships')
+                    .insert(memberships)
+
+                  if (membershipErr) {
+                    setImportStatus(membershipErr.message || 'Failed to link contacts')
+                    return
+                  }
+
+                  setImportStatus('Imported successfully.')
+                  fetchLists(true)
+                  setTimeout(() => {
+                    setShowImportModal(false)
+                    setImportFile(null)
+                    setImportStatus(null)
+                  }, 800)
+                }}
+              >
+                Import
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showContactModal && (
+        <Modal onClose={() => setShowContactModal(false)}>
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Add contact</p>
+                <p className="text-sm text-muted-foreground">Add a single contact to the selected list.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowContactModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Name</Label>
+                <Input value={newContact.name} onChange={(e) => setNewContact((c) => ({ ...c, name: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Email</Label>
+                <Input value={newContact.email} onChange={(e) => setNewContact((c) => ({ ...c, email: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Phone</Label>
+                <Input value={newContact.phone} onChange={(e) => setNewContact((c) => ({ ...c, phone: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Title</Label>
+                <Input value={newContact.title} onChange={(e) => setNewContact((c) => ({ ...c, title: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Location</Label>
+                <Input value={newContact.location} onChange={(e) => setNewContact((c) => ({ ...c, location: e.target.value }))} />
+              </div>
+                  <div className="space-y-1">
+                    <Label>Tags (comma separated)</Label>
+                    <Input
+                      value={newContact.tags.join(', ')}
+                      onChange={(e) => setNewContact((c) => ({ ...c, tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) }))}
+                    />
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <Label>Custom fields (key/value)</Label>
+                    <div className="space-y-2">
+                      {customFields.map((field, idx) => (
+                        <div key={idx} className="grid grid-cols-2 gap-2">
+                          <Input
+                            placeholder="Key (e.g., department)"
+                            value={field.key}
+                            onChange={(e) => {
+                              const next = [...customFields]
+                              next[idx] = { ...next[idx], key: e.target.value }
+                              setCustomFields(next)
+                            }}
+                          />
+                          <Input
+                            placeholder="Value"
+                            value={field.value}
+                            onChange={(e) => {
+                              const next = [...customFields]
+                              next[idx] = { ...next[idx], value: e.target.value }
+                              setCustomFields(next)
+                            }}
+                          />
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCustomFields((f) => [...f, { key: '', value: '' }])}
+                      >
+                        Add field
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+            {contactsError && <p className="text-xs text-red-600">{contactsError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setShowContactModal(false)}>Cancel</Button>
+              <Button
+                onClick={async () => {
+                  if (!selectedListId) {
+                    setContactsError('Select a list first')
+                    return
+                  }
+                  if (!newContact.email.trim()) {
+                    setContactsError('Email required')
+                    return
+                  }
+                  setContactsError(null)
+                  const { data: contact, error } = await supabase
+                    .from('recipient_contacts')
+                    .insert({
+                      full_name: newContact.name,
+                      email: newContact.email,
+                      phone: newContact.phone,
+                      title: newContact.title,
+                      location: newContact.location,
+                      tags: newContact.tags,
+                      channels: ['Email'],
+                    })
+                    .select('id, full_name, email, phone, title, location, tags, channels')
+                    .single()
+
+                  if (error || !contact) {
+                    setContactsError(error?.message || 'Failed to add contact')
+                    return
+                  }
+
+                  await supabase
+                    .from('recipient_contact_memberships')
+                    .insert({ list_id: selectedListId, contact_id: contact.id })
+
+                  setContacts((prev) => [
+                    ...prev,
+                    {
+                      id: contact.id,
+                      name: contact.full_name,
+                      email: contact.email,
+                      phone: contact.phone || '',
+                      title: contact.title || '',
+                      location: contact.location || '',
+                      tags: (contact.tags as string[]) || [],
+                      channels: Array.isArray(contact.channels) ? contact.channels.join(' + ') : '',
+                    },
+                  ])
+
+                  setShowContactModal(false)
+                  setNewContact({ name: '', email: '', phone: '', title: '', location: '', tags: [] })
+                  fetchLists(true)
+                }}
+              >
+                Add
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
@@ -550,6 +890,16 @@ function GrowthCard({ title, description, cta }: { title: string; description: s
       <p className="text-sm text-muted-foreground">{description}</p>
       <Button variant="outline" size="sm">{cta}</Button>
     </Card>
+  )
+}
+
+function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+      <div className="w-full max-w-xl rounded-2xl border border-border/70 bg-card shadow-soft-lg" onClick={(e) => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
   )
 }
 
