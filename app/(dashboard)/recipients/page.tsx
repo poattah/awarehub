@@ -114,6 +114,8 @@ export default function RecipientsPage() {
     tags: [],
     metadata: {},
   })
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([{ key: '', value: '' }])
   const menuRefs = useRef<Record<string | number, HTMLDivElement | null>>({})
   const triggerRefs = useRef<Record<string | number, HTMLButtonElement | null>>({})
@@ -211,7 +213,7 @@ export default function RecipientsPage() {
 
     const { data, error } = await supabase
       .from('recipient_contact_memberships')
-      .select('contact:recipient_contacts(id, full_name, email, phone, title, location, tags, channels)')
+      .select('contact:recipient_contacts(id, full_name, email, phone, title, location, tags, channels, metadata)')
       .eq('list_id', listId)
       .limit(50)
 
@@ -223,26 +225,45 @@ export default function RecipientsPage() {
     }
 
     if (data && data.length) {
-          const mapped: Contact[] = data
-            .map((row) => row.contact)
-            .filter(Boolean)
-            .map((c) => ({
-              id: c!.id,
-              name: c!.full_name,
-              email: c!.email,
-              phone: c!.phone || '',
-              title: c!.title || '',
-              location: c!.location || '',
-              tags: (c!.tags as string[]) || [],
-              channels: Array.isArray(c!.channels) ? c!.channels.join(' + ') : '',
-              metadata: (c as any)?.metadata || {},
-            }))
+      const mapped: Contact[] = data
+        .map((row) => row.contact)
+        .filter(Boolean)
+        .map((c) => {
+          const meta = (c as any)?.metadata || {}
+          const displayName = [meta.first_name, meta.last_name].filter(Boolean).join(' ') || c!.full_name || c!.email
+          return {
+            id: c!.id,
+            name: displayName,
+            email: c!.email,
+            phone: c!.phone || '',
+            title: c!.title || '',
+            location: c!.location || '',
+            tags: (c!.tags as string[]) || [],
+            channels: Array.isArray(c!.channels) ? c!.channels.join(' + ') : '',
+            metadata: meta,
+          }
+        })
       setContacts(mapped)
     } else {
       setContactsError('No contacts found; showing sample contacts.')
       setContacts(contactsByList[listId as number] || [])
     }
     setContactsLoading(false)
+  }
+
+  const refreshListCount = async (listId: string | number) => {
+    const { count } = await supabase
+      .from('recipient_contact_memberships')
+      .select('contact_id', { count: 'exact', head: true })
+      .eq('list_id', listId)
+
+    if (typeof count === 'number') {
+      setRemoteLists((prev) =>
+        prev.map((l) =>
+          l.id === listId ? { ...l, members: count } : l
+        )
+      )
+    }
   }
 
   return (
@@ -682,18 +703,38 @@ export default function RecipientsPage() {
                   const headers = lines.shift()?.split(',').map((h) => h.trim().toLowerCase()) || []
                   const rows = lines.map((line) => {
                     const cols = line.split(',')
-                    const get = (key: string) => {
-                      const idx = headers.indexOf(key)
-                      return idx >= 0 ? cols[idx]?.trim() : ''
+                    const clean = (val: string) => val.replace(/^"+|"+$/g, '').trim()
+                    const normalizedHeaders = headers.map((h) => h.toLowerCase().replace(/"/g, '').replace(/\s+/g, '_'))
+                    const getByKeys = (keys: string[]) => {
+                      const idx = normalizedHeaders.findIndex((h) => keys.includes(h))
+                      return idx >= 0 ? clean(cols[idx] || '') : ''
                     }
+                    const metadata: Record<string, string> = {}
+                    normalizedHeaders.forEach((h, idx) => {
+                      if (!['name','full_name','fullname','email','phone','title','location','tags','channels','first_name','lastname','last_name','firstname','first','last'].includes(h) && cols[idx]?.trim()) {
+                        metadata[h] = clean(cols[idx])
+                      }
+                    })
+                    const first = getByKeys(['first_name','firstname','first'])
+                    const last = getByKeys(['last_name','lastname','last'])
+                    let fullName = getByKeys(['name','full_name','fullname'])
+                    if (!fullName && (first || last)) {
+                      fullName = [first, last].filter(Boolean).join(' ')
+                    }
+                    if (!fullName) {
+                      fullName = getByKeys(['email']) // fallback to email if no name
+                    }
+                    if (first) metadata.first_name = first
+                    if (last) metadata.last_name = last
                     return {
-                      full_name: get('name'),
-                      email: get('email'),
-                      phone: get('phone'),
-                      title: get('title'),
-                      location: get('location'),
-                      tags: get('tags') ? get('tags').split('|').map((t) => t.trim()).filter(Boolean) : [],
-                      channels: get('channels') ? get('channels').split('|').map((t) => t.trim()).filter(Boolean) : [],
+                      full_name: fullName || '',
+                      email: getByKeys(['email']),
+                      phone: getByKeys(['phone']),
+                      title: getByKeys(['title']),
+                      location: getByKeys(['location']),
+                      tags: getByKeys(['tags']) ? getByKeys(['tags']).split('|').map((t) => t.trim()).filter(Boolean) : [],
+                      channels: getByKeys(['channels']) ? getByKeys(['channels']).split('|').map((t) => t.trim()).filter(Boolean) : [],
+                      metadata,
                     }
                   }).filter((row) => row.email)
 
@@ -727,6 +768,7 @@ export default function RecipientsPage() {
                   }
 
                   setImportStatus('Imported successfully.')
+                  await refreshListCount(importTargetList)
                   fetchLists(true)
                   setTimeout(() => {
                     setShowImportModal(false)
@@ -755,14 +797,18 @@ export default function RecipientsPage() {
               </Button>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Name</Label>
-                <Input value={newContact.name} onChange={(e) => setNewContact((c) => ({ ...c, name: e.target.value }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Email</Label>
-                <Input value={newContact.email} onChange={(e) => setNewContact((c) => ({ ...c, email: e.target.value }))} />
-              </div>
+                  <div className="space-y-1">
+                    <Label>First name</Label>
+                    <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Last name</Label>
+                    <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Email</Label>
+                    <Input value={newContact.email} onChange={(e) => setNewContact((c) => ({ ...c, email: e.target.value }))} />
+                  </div>
               <div className="space-y-1">
                 <Label>Phone</Label>
                 <Input value={newContact.phone} onChange={(e) => setNewContact((c) => ({ ...c, phone: e.target.value }))} />
@@ -830,19 +876,32 @@ export default function RecipientsPage() {
                     setContactsError('Email required')
                     return
                   }
+                  if (!firstName.trim() || !lastName.trim()) {
+                    setContactsError('First and last name required')
+                    return
+                  }
+                  const metadata: Record<string, string> = {
+                    first_name: firstName.trim(),
+                    last_name: lastName.trim(),
+                  }
+                  customFields.forEach((f) => {
+                    if (f.key && f.value) metadata[f.key] = f.value
+                  })
+                  const fullName = `${firstName.trim()} ${lastName.trim()}`
                   setContactsError(null)
                   const { data: contact, error } = await supabase
                     .from('recipient_contacts')
                     .insert({
-                      full_name: newContact.name,
+                      full_name: fullName,
                       email: newContact.email,
                       phone: newContact.phone,
                       title: newContact.title,
                       location: newContact.location,
                       tags: newContact.tags,
                       channels: ['Email'],
+                      metadata,
                     })
-                    .select('id, full_name, email, phone, title, location, tags, channels')
+                    .select('id, full_name, email, phone, title, location, tags, channels, metadata')
                     .single()
 
                   if (error || !contact) {
@@ -858,18 +917,23 @@ export default function RecipientsPage() {
                     ...prev,
                     {
                       id: contact.id,
-                      name: contact.full_name,
+                      name: fullName,
                       email: contact.email,
                       phone: contact.phone || '',
                       title: contact.title || '',
                       location: contact.location || '',
                       tags: (contact.tags as string[]) || [],
                       channels: Array.isArray(contact.channels) ? contact.channels.join(' + ') : '',
+                      metadata: (contact as any)?.metadata || {},
                     },
                   ])
 
                   setShowContactModal(false)
-                  setNewContact({ name: '', email: '', phone: '', title: '', location: '', tags: [] })
+                  setNewContact({ name: '', email: '', phone: '', title: '', location: '', tags: [], metadata: {} })
+                  setFirstName('')
+                  setLastName('')
+                  setCustomFields([{ key: '', value: '' }])
+                  await refreshListCount(selectedListId)
                   fetchLists(true)
                 }}
               >
@@ -904,9 +968,20 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
 }
 
 function RecipientPreview({ contact, onClose }: { contact: Contact; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="w-full max-w-xl rounded-2xl border border-border/70 bg-card shadow-soft-lg overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+      <div
+        className="w-full max-w-xl rounded-2xl border border-border/70 bg-card shadow-soft-lg overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
           <div>
             <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Recipient preview</p>

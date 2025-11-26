@@ -104,6 +104,7 @@ export default function CampaignBuilderPage() {
   const draftLoaded = useRef(false)
   const [campaignId, setCampaignId] = useState<string | null>(null)
   const [campaignStatus, setCampaignStatus] = useState<'draft' | 'active' | 'scheduled' | 'completed'>('draft')
+  const [audienceOptions, setAudienceOptions] = useState<string[]>(presetAudiences)
 
   const toggleSelection = (list: string[], value: string, setter: (next: string[]) => void) => {
     if (list.includes(value)) {
@@ -167,46 +168,51 @@ export default function CampaignBuilderPage() {
     review: 'Review and send'
   }
 
-  const draftKey = 'campaign-builder-draft'
-
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const saved = localStorage.getItem(draftKey)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (parsed.name) setName(parsed.name)
-        if (parsed.summary) setSummary(parsed.summary)
-        if (parsed.launchDate) setLaunchDate(parsed.launchDate)
-        if (parsed.cadence) setCadence(parsed.cadence)
-        if (parsed.assetType) setAssetType(parsed.assetType)
-        if (Array.isArray(parsed.channels)) setChannels(parsed.channels)
-        if (Array.isArray(parsed.audience)) setAudience(parsed.audience)
-        if (parsed.theme) setTheme(parsed.theme)
-        if (parsed.tone) setTone(parsed.tone)
-        if (parsed.emailSubject) setEmailSubject(parsed.emailSubject)
-        if (parsed.emailPreviewText) setEmailPreviewText(parsed.emailPreviewText)
-        if (parsed.senderName) setSenderName(parsed.senderName)
-        if (parsed.senderEmail) setSenderEmail(parsed.senderEmail)
-        if (parsed.emailHeadline) setEmailHeadline(parsed.emailHeadline)
-        if (parsed.emailBody) setEmailBody(parsed.emailBody)
-        if (parsed.emailButton) setEmailButton(parsed.emailButton)
-        if (parsed.emailHero) setEmailHero(parsed.emailHero)
-        if (parsed.selectedTemplate) setSelectedTemplate(parsed.selectedTemplate)
-        if (parsed.smsMessage) setSmsMessage(parsed.smsMessage)
-        if (parsed.smsFrom) setSmsFrom(parsed.smsFrom)
-        if (parsed.smsPreview) setSmsPreview(parsed.smsPreview)
-        if (parsed.smsTo) setSmsTo(parsed.smsTo)
-        if (parsed.lastSavedAt) setLastSavedAt(parsed.lastSavedAt)
-      }
-    } catch {
-      // ignore malformed drafts
-    }
+    // Fresh start for /campaigns/new
+    setName('')
+    setSummary('')
+    setLaunchDate(new Date().toISOString().slice(0, 10))
+    setCadence('Send now')
+    setAssetType('email')
+    setChannels(['Email'])
+    setAudience([])
+    setTheme('Wellbeing')
+    setTone('')
+    setEmailSubject('')
+    setEmailPreviewText('')
+    setSenderName('AwareHub')
+    setSenderEmail('noreply@awarehub.com')
+    setEmailHeadline('Make this memorable')
+    setEmailBody('')
+    setEmailButton('View campaign')
+    setEmailHero('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80')
+    setSelectedTemplate('clean')
+    setSmsMessage('')
+    setSmsFrom('')
+    setSmsPreview('Keep it short and clear.')
+    setSmsTo('')
+    setCampaignStatus('draft')
+    setCampaignId(null)
+    setLastSavedAt(null)
     draftLoaded.current = true
+
+    const loadLists = async () => {
+      const { data, error } = await supabase
+        .from('recipient_lists')
+        .select('name')
+        .order('name')
+        .limit(50)
+      if (!error && data?.length) {
+        setAudienceOptions(data.map((d) => d.name))
+      }
+    }
+    loadLists()
   }, [])
 
   const persistDraft = async () => {
     if (typeof window === 'undefined' || !draftLoaded.current) return
+    if (!name.trim()) return
     setSavingDraft(true)
     const payload = {
       name,
@@ -233,7 +239,6 @@ export default function CampaignBuilderPage() {
       smsTo,
       lastSavedAt: new Date().toISOString(),
     }
-    localStorage.setItem(draftKey, JSON.stringify(payload))
     setLastSavedAt(payload.lastSavedAt)
     try {
       const res = await fetch('/api/campaigns/save', {
@@ -579,7 +584,7 @@ export default function CampaignBuilderPage() {
                   <div className="space-y-3">
                     <Label>Select audiences *</Label>
                     <MultiSelectDropdown
-                      options={presetAudiences}
+                      options={audienceOptions}
                       selected={audience}
                       onChange={setAudience}
                       placeholder="Select one or more audiences"
