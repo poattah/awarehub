@@ -22,7 +22,8 @@ async function getOrgIdFromUser(token?: string) {
   return profile?.organization_id || null
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const auth = request.headers.get('authorization') || ''
   const token = auth.startsWith('Bearer ') ? auth.replace('Bearer ', '') : null
   const orgId = await getOrgIdFromUser(token || undefined)
@@ -39,14 +40,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   const { error } = await supabase
     .from('team_invites')
     .update(updates)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('organization_id', orgId)
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const auth = request.headers.get('authorization') || ''
   const token = auth.startsWith('Bearer ') ? auth.replace('Bearer ', '') : null
   const orgId = await getOrgIdFromUser(token || undefined)
@@ -56,7 +58,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   const { error } = await supabase
     .from('team_invites')
     .delete()
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('organization_id', orgId)
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })

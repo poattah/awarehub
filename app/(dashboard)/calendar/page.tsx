@@ -320,14 +320,6 @@ export default function CalendarPage() {
                 Today
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {Object.entries(categoryStyles).map(([category, cls]) => (
-                <span key={category} className={`flex items-center gap-1 rounded-full px-2 py-1 ${cls}`}>
-                  <span className="h-2 w-2 rounded-full bg-current" />
-                  {category}
-                </span>
-              ))}
-            </div>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-dashed border-border/70 bg-card/60 px-4 py-3">
             <div>

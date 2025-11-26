@@ -8,8 +8,9 @@ type UpdateMemberPayload = {
 
 export async function PUT(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params
   const supabase = createServerClient()
 
   // Parse request body
@@ -67,7 +68,7 @@ export async function PUT(
   const { data: targetUser, error: targetError } = await supabase
     .from('profiles')
     .select('organization_id')
-    .eq('id', params.userId)
+    .eq('id', userId)
     .single()
 
   if (targetError || targetUser?.organization_id !== profile.organization_id) {
@@ -94,7 +95,7 @@ export async function PUT(
         .eq('role', 'org_admin')
         .single()
 
-      if (lastAdmin?.id === params.userId) {
+      if (lastAdmin?.id === userId) {
         return NextResponse.json(
           { ok: false, error: 'Cannot change role of the last organization admin' },
           { status: 400 }
@@ -111,7 +112,7 @@ export async function PUT(
   const { data, error } = await supabase
     .from('profiles')
     .update(updatePayload)
-    .eq('id', params.userId)
+    .eq('id', userId)
     .select()
     .single()
 
@@ -121,7 +122,7 @@ export async function PUT(
   }
 
   console.log('✅ Team member updated successfully:', {
-    user_id: params.userId,
+    user_id: userId,
     updated_by: user.id
   })
 
@@ -130,8 +131,9 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params
   const supabase = createServerClient()
 
   // Get authorization token from headers
@@ -178,7 +180,7 @@ export async function DELETE(
   }
 
   // Cannot remove yourself
-  if (params.userId === user.id) {
+  if (userId === user.id) {
     return NextResponse.json(
       { ok: false, error: 'Cannot remove yourself from the team' },
       { status: 400 }
@@ -189,7 +191,7 @@ export async function DELETE(
   const { data: targetUser, error: targetError } = await supabase
     .from('profiles')
     .select('organization_id, role')
-    .eq('id', params.userId)
+    .eq('id', userId)
     .single()
 
   if (targetError || targetUser?.organization_id !== profile.organization_id) {
@@ -203,7 +205,7 @@ export async function DELETE(
   const { error } = await supabase
     .from('profiles')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', params.userId)
+    .eq('id', userId)
 
   if (error) {
     console.error('❌ Team member removal failed:', error)
@@ -211,7 +213,7 @@ export async function DELETE(
   }
 
   console.log('✅ Team member removed successfully:', {
-    user_id: params.userId,
+    user_id: userId,
     removed_by: user.id
   })
 
