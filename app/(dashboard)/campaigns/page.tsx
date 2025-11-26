@@ -41,6 +41,8 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [autoSeedAttempted, setAutoSeedAttempted] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
 
   const handlePreview = (campaign: Campaign) => {
     setSelected(campaign)
@@ -116,6 +118,29 @@ export default function CampaignsPage() {
     }
   }, [autoSeedAttempted])
 
+  // Filter campaigns based on status and search query
+  const filteredCampaigns = useMemo(() => {
+    return campaigns.filter((campaign) => {
+      const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter
+      const matchesSearch =
+        searchQuery === '' ||
+        campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        campaign.description.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesStatus && matchesSearch
+    })
+  }, [campaigns, statusFilter, searchQuery])
+
+  // Count campaigns by status
+  const statusCounts = useMemo(() => {
+    return {
+      all: campaigns.length,
+      draft: campaigns.filter(c => c.status === 'draft').length,
+      active: campaigns.filter(c => c.status === 'active').length,
+      scheduled: campaigns.filter(c => c.status === 'scheduled').length,
+      completed: campaigns.filter(c => c.status === 'completed').length,
+    }
+  }, [campaigns])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -143,12 +168,52 @@ export default function CampaignsPage() {
                 type="search"
                 placeholder="Search campaigns..."
                 className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">🔎</span>
             </div>
-            <Button variant="outline">All Status</Button>
-            <Button variant="outline">All Categories</Button>
           </div>
+
+          {/* Status Filter Buttons */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              variant={statusFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('all')}
+            >
+              All ({statusCounts.all})
+            </Button>
+            <Button
+              variant={statusFilter === 'draft' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('draft')}
+            >
+              📝 Drafts ({statusCounts.draft})
+            </Button>
+            <Button
+              variant={statusFilter === 'active' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('active')}
+            >
+              ✅ Active ({statusCounts.active})
+            </Button>
+            <Button
+              variant={statusFilter === 'scheduled' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('scheduled')}
+            >
+              📅 Scheduled ({statusCounts.scheduled})
+            </Button>
+            <Button
+              variant={statusFilter === 'completed' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('completed')}
+            >
+              ✓ Completed ({statusCounts.completed})
+            </Button>
+          </div>
+
           {error && (
             <div className="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
               {error}
@@ -163,8 +228,20 @@ export default function CampaignsPage() {
             <LoadingSpinner className="h-5 w-5" />
             Loading campaigns from Supabase...
           </div>
+        ) : filteredCampaigns.length === 0 ? (
+          <Card className="border-border/60 shadow-soft">
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">
+                {searchQuery
+                  ? `No campaigns found matching "${searchQuery}"`
+                  : statusFilter !== 'all'
+                  ? `No ${statusFilter} campaigns found`
+                  : 'No campaigns found'}
+              </p>
+            </CardContent>
+          </Card>
         ) : (
-          campaigns.map((campaign) => (
+          filteredCampaigns.map((campaign) => (
             <Card key={campaign.id} className="hover:shadow-soft-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -811,10 +888,11 @@ const fallbackCampaigns: Campaign[] = [
 
 function getStatusVariant(status: string): 'default' | 'secondary' | 'outline' | 'destructive' {
   const variants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-    'active': 'default',
-    'scheduled': 'secondary',
-    'completed': 'outline',
-    'draft': 'outline',
+    'active': 'default',      // Green/primary for active campaigns
+    'scheduled': 'secondary', // Blue for scheduled
+    'completed': 'outline',   // Gray for completed
+    'draft': 'outline',       // Gray for drafts
+    'archived': 'outline',    // Gray for archived
   }
   return variants[status] || 'outline'
 }

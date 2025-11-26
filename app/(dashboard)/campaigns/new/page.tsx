@@ -142,8 +142,9 @@ export default function CampaignBuilderPage() {
     if (assetType === 'sms') {
       sendSms()
     } else {
-      persistDraft().then(() => {
-        setCampaignStatus('active')
+      // Save campaign with 'active' status when sending
+      setCampaignStatus('active')
+      persistDraft('active').then(() => {
         setSendState('sent')
       })
     }
@@ -211,7 +212,7 @@ export default function CampaignBuilderPage() {
     loadLists()
   }, [])
 
-  const persistDraft = async () => {
+  const persistDraft = async (overrideStatus?: 'draft' | 'active' | 'scheduled' | 'completed') => {
     if (typeof window === 'undefined' || !draftLoaded.current) return
     if (!name.trim()) return
     setSavingDraft(true)
@@ -241,6 +242,10 @@ export default function CampaignBuilderPage() {
       lastSavedAt: new Date().toISOString(),
     }
     setLastSavedAt(payload.lastSavedAt)
+
+    // Use override status if provided, otherwise use current state
+    const statusToSave = overrideStatus || campaignStatus
+
     try {
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession()
@@ -267,7 +272,7 @@ export default function CampaignBuilderPage() {
           audience,
           theme,
           tone,
-          status: campaignStatus,
+          status: statusToSave,
           metadata: {
             emailSubject,
             emailPreviewText,
@@ -356,8 +361,9 @@ export default function CampaignBuilderPage() {
       if (!res.ok || !data.ok) {
         throw new Error(data?.error || 'Failed to send SMS')
       }
+      // Save campaign with 'active' status after successful SMS send
       setCampaignStatus('active')
-      persistDraft()
+      await persistDraft('active')
       setSendState('sent')
     } catch (err: any) {
       setSendError(err.message || 'Failed to send SMS')
