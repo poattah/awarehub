@@ -17,6 +17,7 @@ import {
   Layers,
   Megaphone,
   MoreVertical,
+  RefreshCw,
   Send,
   Sparkles,
   X,
@@ -43,6 +44,7 @@ export default function CampaignsPage() {
   const [autoSeedAttempted, setAutoSeedAttempted] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const handlePreview = (campaign: Campaign) => {
     setSelected(campaign)
@@ -58,19 +60,21 @@ export default function CampaignsPage() {
 
       const { data, error } = await supabase
         .from('campaigns')
-        .select('id, name, description, status, start_at, metadata')
-        .order('start_at', { ascending: false })
-        .limit(12)
+        .select('id, name, description, status, start_at, metadata, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(50)
 
       if (!active) return
 
       if (error) {
+        console.error('Failed to fetch campaigns:', error)
         setError('Supabase fetch failed; showing sample campaigns.')
         setLoading(false)
         return
       }
 
       if (data && data.length) {
+        console.log(`✅ Loaded ${data.length} campaigns from Supabase`)
         const mapped = data.map((item) => {
           const meta = (item as any).metadata || {}
           const startDate = item.start_at ? new Date(item.start_at).toLocaleDateString() : 'Not scheduled'
@@ -92,6 +96,8 @@ export default function CampaignsPage() {
         setLoading(false)
         return
       }
+
+      console.warn('No campaigns found in database')
 
       if (!skipSeed && !autoSeedAttempted) {
         const seedRes = await fetch('/api/internal/bootstrap-campaigns', { method: 'POST' })
@@ -116,7 +122,7 @@ export default function CampaignsPage() {
     return () => {
       active = false
     }
-  }, [autoSeedAttempted])
+  }, [autoSeedAttempted, refreshTrigger])
 
   // Filter campaigns based on status and search query
   const filteredCampaigns = useMemo(() => {
@@ -151,6 +157,15 @@ export default function CampaignsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setRefreshTrigger(prev => prev + 1)}
+            disabled={loading}
+            title="Refresh campaigns"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
           <Link href="/campaigns/new">
             <Button>
               <Megaphone className="mr-2 h-4 w-4" />
