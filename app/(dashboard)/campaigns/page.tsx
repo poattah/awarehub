@@ -58,16 +58,37 @@ export default function CampaignsPage() {
       setLoading(true)
       setError(null)
 
+      // Debug: Check authentication
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log('🔐 Auth session:', session ? 'Authenticated' : 'Not authenticated')
+      console.log('👤 User ID:', session?.user?.id)
+
+      // Debug: Check user's organization
+      if (session?.user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', session.user.id)
+          .single()
+        console.log('🏢 User organization:', profile?.organization_id)
+      }
+
       const { data, error } = await supabase
         .from('campaigns')
-        .select('id, name, description, status, start_at, metadata, updated_at')
+        .select('id, name, description, status, start_at, metadata, updated_at, organization_id')
         .order('updated_at', { ascending: false })
         .limit(50)
+
+      console.log('📊 Campaign query result:', {
+        success: !error,
+        count: data?.length || 0,
+        error: error?.message
+      })
 
       if (!active) return
 
       if (error) {
-        console.error('Failed to fetch campaigns:', error)
+        console.error('❌ Failed to fetch campaigns:', error)
         setError('Supabase fetch failed; showing sample campaigns.')
         setLoading(false)
         return
@@ -75,6 +96,7 @@ export default function CampaignsPage() {
 
       if (data && data.length) {
         console.log(`✅ Loaded ${data.length} campaigns from Supabase`)
+        console.log('📋 First campaign:', data[0])
         const mapped = data.map((item) => {
           const meta = (item as any).metadata || {}
           const startDate = item.start_at ? new Date(item.start_at).toLocaleDateString() : 'Not scheduled'

@@ -88,12 +88,20 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from('campaigns')
     .upsert(upsertPayload, { onConflict: 'id' })
-    .select('id, status')
+    .select('id, status, organization_id')
     .single()
 
   if (error) {
+    console.error('❌ Campaign save failed:', error)
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
   }
+
+  console.log('✅ Campaign saved successfully:', {
+    id: data?.id,
+    status: data?.status,
+    organization_id: data?.organization_id,
+    user_id: user.id
+  })
 
   return NextResponse.json({ ok: true, id: data?.id, status: data?.status })
 }
