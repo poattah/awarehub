@@ -13,7 +13,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns'
-import { ChevronLeft, ChevronRight, Filter, Plus, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Filter, Plus, X, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -53,6 +53,12 @@ const categoryStyles = {
   'Safety': 'bg-orange-500/15 text-orange-700 border border-orange-200',
   'Finance': 'bg-teal-500/15 text-teal-700 border border-teal-200',
   'Engagement': 'bg-blue-500/15 text-blue-700 border border-blue-200',
+  'Corporate Events': 'bg-indigo-500/15 text-indigo-700 border border-indigo-200',
+  'Religious Events': 'bg-amber-600/15 text-amber-700 border border-amber-200',
+  'National Events': 'bg-cyan-500/15 text-cyan-700 border border-cyan-200',
+  'Social Events': 'bg-rose-500/15 text-rose-700 border border-rose-200',
+  'Casual Events': 'bg-slate-500/15 text-slate-700 border border-slate-200',
+  'Custom Events': 'bg-zinc-500/15 text-zinc-700 border border-zinc-200',
 } as const
 
 const monthObservances: ObservanceSeed[] = [
@@ -189,6 +195,8 @@ export default function CalendarPage() {
     timeRange: 'All day',
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false)
 
   const allEvents = useMemo(() => [...seededEvents, ...userEvents], [userEvents])
 
@@ -199,12 +207,15 @@ export default function CalendarPage() {
   }, [currentMonth])
 
   const eventsByDate = useMemo(() => {
-    return allEvents.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
+    const filtered = categoryFilter === 'all'
+      ? allEvents
+      : allEvents.filter((event) => event.category === categoryFilter)
+    return filtered.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
       const key = format(parseISO(event.date), 'yyyy-MM-dd')
       acc[key] = acc[key] ? [...acc[key], event] : [event]
       return acc
     }, {})
-  }, [allEvents])
+  }, [allEvents, categoryFilter])
 
   const handleAddEvent = (e: React.FormEvent) => {
     e.preventDefault()
@@ -238,15 +249,45 @@ export default function CalendarPage() {
               100+ corporate observances preloaded. Add your own moments and keep everything in one view.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+          <div className="flex items-center gap-2 relative">
+            <Button variant="outline" size="sm" onClick={() => setCategoryMenuOpen((o) => !o)}>
               <Filter className="mr-2 h-4 w-4" />
-              Filter
+              {categoryFilter === 'all' ? 'All categories' : categoryFilter}
+              <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
             <Button size="sm" onClick={() => setIsModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Event
             </Button>
+            {categoryMenuOpen && (
+              <div className="absolute right-0 top-12 z-20 w-56 rounded-xl border border-border/70 bg-card shadow-soft-lg p-1">
+                <button
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm"
+                  onClick={() => {
+                    setCategoryFilter('all')
+                    setCategoryMenuOpen(false)
+                  }}
+                >
+                  All categories
+                </button>
+                {Object.keys(categoryStyles)
+                  .filter((k) => !['DEI','Heritage','Mental Health','Wellness','Sustainability','Compliance','Safety','Finance','Engagement'].includes(k))
+                  .concat(['Corporate Events','Religious Events','National Events','Social Events','Casual Events','Custom Events'])
+                  .filter((v, idx, arr) => arr.indexOf(v) === idx)
+                  .map((cat) => (
+                    <button
+                      key={cat}
+                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm"
+                      onClick={() => {
+                        setCategoryFilter(cat)
+                        setCategoryMenuOpen(false)
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
 

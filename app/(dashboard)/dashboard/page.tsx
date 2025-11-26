@@ -1,10 +1,70 @@
+'use client'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Megaphone, TrendingUp, Users, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 export default function DashboardPage() {
+  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [events, setEvents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    const load = async () => {
+      setLoading(true)
+      const [campaignRes, eventsRes] = await Promise.all([
+        supabase
+          .from('campaigns')
+          .select('id, name, status, start_at, metadata, updated_at')
+          .order('updated_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('calendar_events')
+          .select('id, title, start_date, category')
+          .gte('start_date', new Date().toISOString().slice(0, 10))
+          .order('start_date', { ascending: true })
+          .limit(5),
+      ])
+      if (!active) return
+      setCampaigns(campaignRes.data || [])
+      setEvents(eventsRes.data || [])
+      setLoading(false)
+    }
+    load()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const hasCampaigns = campaigns.length > 0
+  const activeCount = campaigns.filter((c) => c.status === 'active').length
+  const draftCount = campaigns.filter((c) => c.status === 'draft').length
+  const scheduledCount = campaigns.filter((c) => c.status === 'scheduled').length
+  const hasEvents = events.length > 0
+  const upcomingCount = hasEvents ? events.length : 8
+
+  const recentList = hasCampaigns
+    ? campaigns.slice(0, 5).map((c) => ({
+        id: c.id,
+        name: c.name || 'Untitled',
+        date: c.start_at ? new Date(c.start_at).toLocaleDateString() : 'Not scheduled',
+        status: c.status || 'draft',
+      }))
+    : recentCampaigns
+
+  const upcoming = hasEvents
+    ? events.map((e) => ({
+        id: e.id,
+        name: e.title,
+        date: e.start_date ? new Date(e.start_date).toLocaleDateString() : 'Date TBC',
+        category: e.category,
+      }))
+    : upcomingEvents
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -32,9 +92,9 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{hasCampaigns ? activeCount : 12}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <span className="text-green-600">↑ +2</span> from last month
+              {hasCampaigns ? 'Live campaigns' : <span className="text-green-600">↑ sample</span>}
             </p>
           </CardContent>
         </Card>
@@ -46,9 +106,9 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{upcomingCount}</div>
             <p className="text-xs text-muted-foreground">
-              Next 30 days
+              {hasEvents ? 'Calendar events' : 'Next 30 days (sample)'}
             </p>
           </CardContent>
         </Card>
@@ -60,9 +120,9 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42%</div>
+            <div className="text-2xl font-bold">{hasCampaigns ? '—' : '42%'}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <span className="text-green-600">↑ +5%</span> from last month
+              {hasCampaigns ? 'Engagement pending real data' : <span className="text-green-600">↑ sample</span>}
             </p>
           </CardContent>
         </Card>
@@ -74,9 +134,9 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,847</div>
+            <div className="text-2xl font-bold">{hasCampaigns ? '—' : '2,847'}</div>
             <p className="text-xs text-muted-foreground">
-              Employees reached
+              {hasCampaigns ? 'Reach pending real data' : 'Employees reached'}
             </p>
           </CardContent>
         </Card>
@@ -91,13 +151,15 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentCampaigns.map((campaign) => (
+              {(loading ? [] : recentList).map((campaign) => (
                 <div
                   key={campaign.id}
                   className="group flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-all duration-200 cursor-pointer"
                 >
                   <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none group-hover:text-primary transition-colors">{campaign.name}</p>
+                    <p className="text-sm font-medium leading-none group-hover:text-primary transition-colors">
+                      {campaign.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">{campaign.date}</p>
                   </div>
                   <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
@@ -116,13 +178,15 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {upcomingEvents.map((event) => (
+              {(loading ? [] : upcoming).map((event) => (
                 <div key={event.id} className="group flex items-start space-x-3 p-3 rounded-xl hover:bg-muted/50 transition-all duration-200 cursor-pointer">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-soft transition-all">
                     <Calendar className="h-5 w-5 group-hover:scale-110 transition-transform" />
                   </div>
                   <div className="space-y-1 flex-1">
-                    <p className="text-sm font-medium leading-none group-hover:text-primary transition-colors">{event.name}</p>
+                    <p className="text-sm font-medium leading-none group-hover:text-primary transition-colors">
+                      {event.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">{event.date}</p>
                   </div>
                 </div>
