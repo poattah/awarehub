@@ -119,6 +119,17 @@ export default function RecipientsPage() {
   const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([{ key: '', value: '' }])
   const menuRefs = useRef<Record<string | number, HTMLDivElement | null>>({})
   const triggerRefs = useRef<Record<string | number, HTMLButtonElement | null>>({})
+  const [signupForms, setSignupForms] = useState<any[]>([])
+  const [signupLoading, setSignupLoading] = useState(false)
+  const [signupError, setSignupError] = useState<string | null>(null)
+  const [showSignupModal, setShowSignupModal] = useState(false)
+  const [signupName, setSignupName] = useState('')
+  const [signupDescription, setSignupDescription] = useState('')
+  const [signupTargetList, setSignupTargetList] = useState<string>('')
+  const [signupSuccessMessage, setSignupSuccessMessage] = useState('Thanks for signing up!')
+  const [signupAllowDuplicates, setSignupAllowDuplicates] = useState(false)
+  const [signupConsentText, setSignupConsentText] = useState('I agree to receive updates from this organization.')
+  const [signupStatus, setSignupStatus] = useState<string | null>(null)
 
   const listSource = remoteLists.length ? remoteLists : lists
 
@@ -206,6 +217,26 @@ export default function RecipientsPage() {
   useEffect(() => {
     fetchLists()
   }, [fetchLists])
+
+  useEffect(() => {
+    if (activeTab !== 'growth') return
+    const loadSignupForms = async () => {
+      setSignupLoading(true)
+      setSignupError(null)
+      const { data, error } = await supabase
+        .from('signup_forms')
+        .select('id, name, description, target_list_id, success_config, created_at')
+        .order('created_at', { ascending: false })
+        .limit(25)
+      if (error) {
+        setSignupError('Could not load signup forms')
+      } else {
+        setSignupForms(data || [])
+      }
+      setSignupLoading(false)
+    }
+    loadSignupForms()
+  }, [activeTab])
 
   const fetchContacts = async (listId: string | number) => {
     setContactsLoading(true)
@@ -528,30 +559,81 @@ export default function RecipientsPage() {
             ))}
           </div>
         ) : (
-          <div className="p-4 space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <GrowthCard
-                title="Create signup form"
-                description="Capture new subscribers with branded forms and consent."
-                cta="Create"
-              />
-              <GrowthCard
-                title="Preference pages"
-                description="Let people tailor topics: wellbeing, DEI, safety, compliance."
-                cta="Customize"
+      <div className="p-4 space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <GrowthCard
+            title="Create signup form"
+            description="Capture new subscribers with branded forms and consent."
+            cta="Create"
+            onClick={() => setShowSignupModal(true)}
+          />
+          <GrowthCard
+            title="Preference pages"
+            description="Let people tailor topics: wellbeing, DEI, safety, compliance."
+            cta="Customize"
               />
               <GrowthCard
                 title="Import directory"
                 description="Sync HRIS or CSV to keep lists fresh."
                 cta="Connect"
               />
-              <GrowthCard
-                title="Invite champions"
-                description="Add campaign champions as reviewers before launch."
-                cta="Add champions"
-              />
+          <GrowthCard
+            title="Invite champions"
+            description="Add campaign champions as reviewers before launch."
+            cta="Add champions"
+          />
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-soft-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">Signup forms</p>
+              <p className="text-sm text-muted-foreground">
+                Embed these forms or share the link to collect subscribers into a list.
+              </p>
             </div>
+            {signupLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
           </div>
+          {signupError && <p className="text-xs text-red-600 mt-2">{signupError}</p>}
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {signupForms.map((form) => {
+              const formUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/forms/${form.id}`
+              return (
+                <Card key={form.id} className="border-border/60 p-3 shadow-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">{form.name}</p>
+                      <p className="text-xs text-muted-foreground">{form.description || 'No description'}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(formUrl)
+                          setSignupStatus('Link copied')
+                          setTimeout(() => setSignupStatus(null), 1500)
+                        } catch {
+                          setSignupStatus('Copy failed')
+                        }
+                      }}
+                    >
+                      Copy link
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Target list: {listSource.find((l) => String(l.id) === String(form.target_list_id))?.name || 'None'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">URL: {formUrl}</p>
+                </Card>
+              )
+            })}
+            {!signupForms.length && !signupLoading && (
+              <p className="text-sm text-muted-foreground col-span-2">No signup forms yet. Create one to get started.</p>
+            )}
+          </div>
+          {signupStatus && <p className="text-xs text-muted-foreground mt-2">{signupStatus}</p>}
+        </div>
+      </div>
         )}
       </div>
 
@@ -651,6 +733,117 @@ export default function RecipientsPage() {
                 disabled={savingList}
               >
                 {savingList ? 'Saving...' : 'Create'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showSignupModal && (
+        <Modal onClose={() => setShowSignupModal(false)}>
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Create signup form</p>
+                <p className="text-sm text-muted-foreground">Collect subscribers and add them to a list.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowSignupModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Name</Label>
+                <Input value={signupName} onChange={(e) => setSignupName(e.target.value)} placeholder="e.g., Newsletter signup" />
+              </div>
+              <div className="space-y-1">
+                <Label>Description</Label>
+                <Textarea value={signupDescription} onChange={(e) => setSignupDescription(e.target.value)} rows={2} placeholder="Short blurb shown on the form" />
+              </div>
+              <div className="space-y-1">
+                <Label>Target list</Label>
+                <select
+                  value={signupTargetList}
+                  onChange={(e) => setSignupTargetList(e.target.value)}
+                  className="w-full rounded-xl border border-border/60 bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Select a list (optional)</option>
+                  {listSource.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>Success message</Label>
+                <Input value={signupSuccessMessage} onChange={(e) => setSignupSuccessMessage(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Consent text</Label>
+                <Input value={signupConsentText} onChange={(e) => setSignupConsentText(e.target.value)} />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={signupAllowDuplicates}
+                  onChange={(e) => setSignupAllowDuplicates(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                Allow duplicate submissions from same email
+              </label>
+              {signupError && <p className="text-xs text-red-600">{signupError}</p>}
+              {signupStatus && <p className="text-xs text-muted-foreground">{signupStatus}</p>}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setShowSignupModal(false)}>Cancel</Button>
+              <Button
+                onClick={async () => {
+                  if (!signupName.trim()) {
+                    setSignupError('Name is required')
+                    return
+                  }
+                  setSignupError(null)
+                  setSignupStatus('Saving...')
+                  const payload = {
+                    name: signupName.trim(),
+                    description: signupDescription.trim(),
+                    target_list_id: signupTargetList || null,
+                    fields: {
+                      email: { enabled: true, required: true },
+                      first_name: { enabled: true, required: false },
+                      last_name: { enabled: true, required: false },
+                      phone: { enabled: true, required: false },
+                    },
+                    settings: {
+                      double_opt_in: false,
+                      allow_duplicates: signupAllowDuplicates,
+                      consent_text: signupConsentText,
+                    },
+                    success_config: {
+                      message: signupSuccessMessage,
+                      redirect_url: null,
+                    },
+                  }
+                  const { data, error } = await supabase
+                    .from('signup_forms')
+                    .insert(payload as any)
+                    .select('id, name, description, target_list_id, success_config, created_at')
+                    .single()
+                  if (error || !data) {
+                    setSignupError(error?.message || 'Failed to create form')
+                    setSignupStatus(null)
+                    return
+                  }
+                  setSignupForms((prev) => [data, ...prev])
+                  setSignupName('')
+                  setSignupDescription('')
+                  setSignupTargetList('')
+                  setSignupAllowDuplicates(false)
+                  setSignupStatus('Created!')
+                  setTimeout(() => setSignupStatus(null), 1200)
+                  setShowSignupModal(false)
+                }}
+              >
+                Create form
               </Button>
             </div>
           </div>
@@ -947,12 +1140,12 @@ export default function RecipientsPage() {
   )
 }
 
-function GrowthCard({ title, description, cta }: { title: string; description: string; cta: string }) {
+function GrowthCard({ title, description, cta, onClick }: { title: string; description: string; cta: string; onClick?: () => void }) {
   return (
     <Card className="border-border/60 shadow-soft-lg p-4 space-y-2">
       <p className="font-semibold">{title}</p>
       <p className="text-sm text-muted-foreground">{description}</p>
-      <Button variant="outline" size="sm">{cta}</Button>
+      <Button variant="outline" size="sm" onClick={onClick}>{cta}</Button>
     </Card>
   )
 }
