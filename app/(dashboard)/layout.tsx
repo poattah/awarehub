@@ -2,8 +2,9 @@
 
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 export default function DashboardLayout({
   children,
@@ -11,7 +12,33 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session && !cancelled) {
+        // Redirect unauthenticated users to login, preserving intended path
+        const redirectTo = encodeURIComponent(pathname || '/dashboard')
+        router.push(`/auth/login?redirectTo=${redirectTo}`)
+      }
+
+      if (!cancelled) {
+        setCheckingAuth(false)
+      }
+    }
+
+    checkAuth()
+
+    return () => {
+      cancelled = true
+    }
+  }, [pathname, router])
 
   useEffect(() => {
     setIsTransitioning(true)
@@ -35,14 +62,20 @@ export default function DashboardLayout({
 
         {/* Scrollable Content with smooth transitions */}
         <main className="flex-1 overflow-y-auto">
-          <div
-            className={`p-6 transition-all duration-300 ${
-              isTransitioning
-                ? 'opacity-0 translate-y-2'
-                : 'opacity-100 translate-y-0'
-            }`}
-          >
-            {children}
+          <div className="p-6">
+            {checkingAuth ? (
+              <div className="text-sm text-muted-foreground">Checking your session…</div>
+            ) : (
+              <div
+                className={`transition-all duration-300 ${
+                  isTransitioning
+                    ? 'opacity-0 translate-y-2'
+                    : 'opacity-100 translate-y-0'
+                }`}
+              >
+                {children}
+              </div>
+            )}
           </div>
         </main>
       </div>

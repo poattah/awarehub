@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -14,6 +14,8 @@ import {
   Plug2,
   Users2,
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { useState, useEffect } from 'react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -29,6 +31,30 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!cancelled) {
+        setUserEmail(session?.user?.email ?? null)
+      }
+    }
+
+    loadUser()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+  }
 
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r border-border/50 backdrop-blur-xl">
@@ -86,12 +112,23 @@ export function Sidebar() {
 
       {/* Footer - User Profile Preview */}
       <div className="p-3 border-t border-border/50">
-        <div className="flex items-center space-x-3 rounded-xl px-3 py-2.5 hover:bg-muted/50 transition-all duration-200 cursor-pointer group">
+        <div className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-muted/50 transition-all duration-200 group">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-600 shadow-soft group-hover:shadow-soft-lg transition-all" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Demo User</p>
-            <p className="text-xs text-muted-foreground truncate">demo@awarehub.com</p>
+            <p className="text-sm font-medium truncate">
+              {userEmail ? userEmail.split('@')[0] : 'Signed in'}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {userEmail || 'Session active'}
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+          >
+            Sign out
+          </button>
         </div>
       </div>
     </div>

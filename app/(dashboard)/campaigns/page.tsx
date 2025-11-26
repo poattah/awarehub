@@ -15,11 +15,16 @@ import {
   Brush,
   Eye,
   Layers,
+  Calendar,
   Megaphone,
   MoreVertical,
+  Search,
   RefreshCw,
   Send,
   Sparkles,
+  BarChart3,
+  Users,
+  FileText,
   X,
 } from 'lucide-react'
 
@@ -33,6 +38,10 @@ type Campaign = {
   reach: number
   channels: string[]
   assetImage: string
+  assetType?: string
+  metadata?: Record<string, any>
+  smsMessage?: string
+  smsTo?: string
 }
 
 export default function CampaignsPage() {
@@ -100,6 +109,12 @@ export default function CampaignsPage() {
         const mapped = data.map((item) => {
           const meta = (item as any).metadata || {}
           const startDate = item.start_at ? new Date(item.start_at).toLocaleDateString() : 'Not scheduled'
+          const channels = Array.isArray(meta.channels) && meta.channels.length
+            ? meta.channels
+            : meta.assetType
+              ? [String(meta.assetType).toUpperCase()]
+              : ['Email']
+          const assetType = meta.assetType || (channels.includes('SMS') ? 'sms' : 'email')
           return {
             id: item.id,
             name: item.name,
@@ -108,7 +123,11 @@ export default function CampaignsPage() {
             date: startDate,
             engagement: meta.engagement ?? 0,
             reach: meta.reach ?? 0,
-            channels: Array.isArray(meta.channels) ? meta.channels : ['Email', 'Slack'],
+            channels,
+            assetType,
+            smsMessage: meta.smsMessage,
+            smsTo: meta.smsTo,
+            metadata: meta,
             assetImage:
               meta.asset_image ||
               'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=320&q=80',
@@ -208,7 +227,7 @@ export default function CampaignsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">🔎</span>
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
           </div>
 
@@ -226,28 +245,28 @@ export default function CampaignsPage() {
               size="sm"
               onClick={() => setStatusFilter('draft')}
             >
-              📝 Drafts ({statusCounts.draft})
+              <FileText className="mr-2 h-4 w-4" /> Drafts ({statusCounts.draft})
             </Button>
             <Button
               variant={statusFilter === 'active' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setStatusFilter('active')}
             >
-              ✅ Active ({statusCounts.active})
+              <Send className="mr-2 h-4 w-4" /> Active ({statusCounts.active})
             </Button>
             <Button
               variant={statusFilter === 'scheduled' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setStatusFilter('scheduled')}
             >
-              📅 Scheduled ({statusCounts.scheduled})
+              <Calendar className="mr-2 h-4 w-4" /> Scheduled ({statusCounts.scheduled})
             </Button>
             <Button
               variant={statusFilter === 'completed' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setStatusFilter('completed')}
             >
-              ✓ Completed ({statusCounts.completed})
+              <Layers className="mr-2 h-4 w-4" /> Completed ({statusCounts.completed})
             </Button>
           </div>
 
@@ -291,11 +310,11 @@ export default function CampaignsPage() {
                     </div>
                     <CardDescription>{campaign.description}</CardDescription>
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                      <span>📅 {campaign.date}</span>
+                      <span className="inline-flex items-center gap-1"><Calendar className="h-4 w-4" /> {campaign.date}</span>
                       <span>•</span>
-                      <span>📊 {campaign.engagement}% engagement</span>
+                      <span className="inline-flex items-center gap-1"><BarChart3 className="h-4 w-4" /> {campaign.engagement}% engagement</span>
                       <span>•</span>
-                      <span>👥 {campaign.reach} reached</span>
+                      <span className="inline-flex items-center gap-1"><Users className="h-4 w-4" /> {campaign.reach} reached</span>
                     </div>
                   </div>
                   <Button variant="ghost" size="icon">
@@ -352,6 +371,7 @@ function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
     cta: 'View campaign',
     image: campaign.assetImage,
   })
+  const isSms = (campaign.assetType || '').toLowerCase() === 'sms' || campaign.channels.includes('SMS')
 
   const palette = useMemo(
     () => [
@@ -397,7 +417,8 @@ function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
         </div>
 
         <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr] overflow-y-auto">
-          <Card className="border-border/60 shadow-soft-lg overflow-hidden">
+          {!isSms && (
+            <Card className="border-border/60 shadow-soft-lg overflow-hidden">
             <div className="border-b border-border/60 bg-muted/40 px-4 py-3 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <p className="text-sm font-semibold">Poster canvas</p>
@@ -464,57 +485,77 @@ function PreviewModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
               </div>
             </div>
           </Card>
+          )}
 
           <Card className="border-border/60 shadow-soft-lg overflow-hidden">
             <div className="border-b border-border/60 bg-muted/40 px-4 py-3 flex items-center gap-2">
               <Brush className="h-4 w-4 text-primary" />
-              <p className="text-sm font-semibold">Email / asset design</p>
+              <p className="text-sm font-semibold">{isSms ? 'SMS preview' : 'Email / asset design'}</p>
             </div>
-            <div className="p-4 space-y-4">
-              <div className="rounded-2xl border border-border/60 bg-white shadow-soft-lg overflow-hidden">
-                <div className="border-b border-border/60 px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
-                  <span>Subject</span>
-                  <span className="font-semibold text-foreground truncate max-w-[60%]">{asset.subject}</span>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div className="rounded-xl border border-border/60 bg-muted/40 p-3 flex items-center justify-center">
-                    <img src={asset.image} alt="" className="h-24 w-24 object-cover rounded-lg border border-border/60 shadow-soft" />
+            {!isSms ? (
+              <div className="p-4 space-y-4">
+                <div className="rounded-2xl border border-border/60 bg-white shadow-soft-lg overflow-hidden">
+                  <div className="border-b border-border/60 px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
+                    <span>Subject</span>
+                    <span className="font-semibold text-foreground truncate max-w-[60%]">{asset.subject}</span>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-foreground">{asset.headline}</p>
-                    <p className="text-sm text-muted-foreground">{asset.body}</p>
+                  <div className="p-4 space-y-3">
+                    <div className="rounded-xl border border-border/60 bg-muted/40 p-3 flex items-center justify-center">
+                      <img src={asset.image} alt="" className="h-24 w-24 object-cover rounded-lg border border-border/60 shadow-soft" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-foreground">{asset.headline}</p>
+                      <p className="text-sm text-muted-foreground">{asset.body}</p>
+                    </div>
+                    <Button className="w-full" style={{ background: poster.accent, color: '#0F172A' }}>
+                      {asset.cta}
+                    </Button>
                   </div>
-                  <Button className="w-full" style={{ background: poster.accent, color: '#0F172A' }}>
-                    {asset.cta}
-                  </Button>
                 </div>
-              </div>
 
-              <div className="grid gap-3">
-                <div className="space-y-1">
-                  <Label>Subject</Label>
-                  <Input value={asset.subject} onChange={(e) => setAsset((p) => ({ ...p, subject: e.target.value }))} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Headline</Label>
-                  <Input value={asset.headline} onChange={(e) => setAsset((p) => ({ ...p, headline: e.target.value }))} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Body copy</Label>
-                  <Textarea rows={2} value={asset.body} onChange={(e) => setAsset((p) => ({ ...p, body: e.target.value }))} />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3">
                   <div className="space-y-1">
-                    <Label>CTA label</Label>
-                    <Input value={asset.cta} onChange={(e) => setAsset((p) => ({ ...p, cta: e.target.value }))} />
+                    <Label>Subject</Label>
+                    <Input value={asset.subject} onChange={(e) => setAsset((p) => ({ ...p, subject: e.target.value }))} />
                   </div>
                   <div className="space-y-1">
-                    <Label>Hero image URL</Label>
-                    <Input value={asset.image} onChange={(e) => setAsset((p) => ({ ...p, image: e.target.value }))} />
+                    <Label>Headline</Label>
+                    <Input value={asset.headline} onChange={(e) => setAsset((p) => ({ ...p, headline: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Body copy</Label>
+                    <Textarea rows={2} value={asset.body} onChange={(e) => setAsset((p) => ({ ...p, body: e.target.value }))} />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label>CTA label</Label>
+                      <Input value={asset.cta} onChange={(e) => setAsset((p) => ({ ...p, cta: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Hero image URL</Label>
+                      <Input value={asset.image} onChange={(e) => setAsset((p) => ({ ...p, image: e.target.value }))} />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 space-y-4">
+                <div className="rounded-2xl border border-border/60 bg-white shadow-soft-lg overflow-hidden">
+                  <div className="border-b border-border/60 px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
+                    <span>To</span>
+                    <span className="font-semibold text-foreground truncate max-w-[60%]">
+                      {campaign.smsTo || 'Recipients list'}
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{campaign.smsMessage || 'SMS content not provided.'}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Estimated segments: {Math.max(1, Math.ceil(((campaign.smsMessage || '').length || 1) / 160))}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
 
           <Card className="border-border/60 shadow-soft-lg overflow-hidden">

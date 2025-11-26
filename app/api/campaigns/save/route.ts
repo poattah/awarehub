@@ -52,23 +52,90 @@ export async function POST(request: Request) {
     )
   }
 
-  // Get user's profile to find their organization
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
+  // Get or create user's profile + organization so RLS + FKs work
+  let organizationId: string | null = null
+  try {
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
 
-  if (profileError || !profile?.organization_id) {
+    if (!profileError && existingProfile?.organization_id) {
+      organizationId = existingProfile.organization_id as string
+    } else {
+      // Auto-bootstrap a lightweight org + profile for this user
+      const orgSlug =
+        (process.env.NEXT_PUBLIC_ORG_SLUG && `${process.env.NEXT_PUBLIC_ORG_SLUG}-${user.id.slice(0, 8)}`) ||
+        `awarehub-${user.id.slice(0, 8)}`
+
+      const orgName =
+        process.env.NEXT_PUBLIC_ORG_NAME ||
+        (user.user_metadata?.full_name as string | undefined) ||
+        (user.email ?? 'AwareHub Organization')
+
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .upsert(
+          {
+            slug: orgSlug,
+            name: orgName,
+          },
+          { onConflict: 'slug' }
+        )
+        .select('id')
+        .single()
+
+      if (orgError || !org?.id) {
+        console.error('❌ Failed to upsert organization for user:', orgError)
+        return NextResponse.json(
+          { ok: false, error: 'Could not determine organization for user' },
+          { status: 500 }
+        )
+      }
+
+      const { error: upsertProfileError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: user.id,
+            organization_id: org.id,
+            email: user.email ?? '',
+            full_name:
+              (user.user_metadata?.full_name as string | undefined) ||
+              (user.email ?? 'AwareHub User'),
+          },
+          { onConflict: 'id' }
+        )
+
+      if (upsertProfileError) {
+        console.error('❌ Failed to upsert profile for user:', upsertProfileError)
+        return NextResponse.json(
+          { ok: false, error: 'Could not create profile for user' },
+          { status: 500 }
+        )
+      }
+
+      organizationId = org.id as string
+    }
+  } catch (err) {
+    console.error('❌ Error resolving user organization/profile:', err)
     return NextResponse.json(
-      { ok: false, error: 'User profile not found or missing organization' },
-      { status: 403 }
+      { ok: false, error: 'Failed to resolve user organization' },
+      { status: 500 }
+    )
+  }
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { ok: false, error: 'User organization could not be determined' },
+      { status: 500 }
     )
   }
 
   const upsertPayload = {
     id: body.id,
-    organization_id: profile.organization_id,
+    organization_id: organizationId,
     created_by: user.id,
     name: body.name,
     description: body.summary || '',

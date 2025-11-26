@@ -32,7 +32,7 @@ import {
 } from 'lucide-react'
 
 const presetAudiences = ['All Employees', 'People Managers', 'New Hires', 'Remote Teams', 'DEI Champions']
-const presetChannels = ['Email', 'Slack', 'Microsoft Teams', 'Intranet Banner', 'Digital Signage']
+const presetChannels = ['Email', 'Slack', 'Microsoft Teams', 'Intranet Banner', 'Digital Signage', 'SMS']
 
 const assetTypes = [
   { key: 'email', label: 'Email', icon: Mail, description: 'Send email campaigns to your audience' },
@@ -106,6 +106,14 @@ export default function CampaignBuilderPage() {
   const [campaignId, setCampaignId] = useState<string | null>(null)
   const [campaignStatus, setCampaignStatus] = useState<'draft' | 'active' | 'scheduled' | 'completed'>('draft')
   const [audienceOptions, setAudienceOptions] = useState<string[]>(presetAudiences)
+  const [audienceMap, setAudienceMap] = useState<Record<string, string>>({})
+  const assetDefaultChannels: Record<string, string[]> = {
+    email: ['Email'],
+    sms: ['SMS'],
+    slack: ['Slack'],
+    quiz: ['Email'],
+    poster: ['Email'],
+  }
 
   const toggleSelection = (list: string[], value: string, setter: (next: string[]) => void) => {
     if (list.includes(value)) {
@@ -116,6 +124,14 @@ export default function CampaignBuilderPage() {
   }
 
   const stepIndex = useMemo(() => steps.findIndex((s) => s.key === activeStep), [activeStep])
+
+  const handleAssetTypeChange = (type: string) => {
+    setAssetType(type)
+    const defaults = assetDefaultChannels[type]
+    if (defaults) {
+      setChannels(defaults)
+    }
+  }
 
   const goToNextStep = () => {
     if (stepIndex < steps.length - 1) {
@@ -171,42 +187,98 @@ export default function CampaignBuilderPage() {
   }
 
   useEffect(() => {
-    // Fresh start for /campaigns/new
-    setName('')
-    setSummary('')
-    setLaunchDate(new Date().toISOString().slice(0, 10))
-    setCadence('Send now')
-    setAssetType('email')
-    setChannels(['Email'])
-    setAudience([])
-    setTheme('Wellbeing')
-    setTone('')
-    setEmailSubject('')
-    setEmailPreviewText('')
-    setSenderName('AwareHub')
-    setSenderEmail('noreply@awarehub.com')
-    setEmailHeadline('Make this memorable')
-    setEmailBody('')
-    setEmailButton('View campaign')
-    setEmailHero('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80')
-    setSelectedTemplate('clean')
-    setSmsMessage('')
-    setSmsFrom('')
-    setSmsPreview('Keep it short and clear.')
-    setSmsTo('')
-    setCampaignStatus('draft')
-    setCampaignId(null)
-    setLastSavedAt(null)
-    draftLoaded.current = true
+    const resetBlank = () => {
+      setName('')
+      setSummary('')
+      setLaunchDate(new Date().toISOString().slice(0, 10))
+      setCadence('Send now')
+      setAssetType('email')
+      setChannels(['Email'])
+      setAudience([])
+      setTheme('Wellbeing')
+      setTone('')
+      setEmailSubject('')
+      setEmailPreviewText('')
+      setSenderName('AwareHub')
+      setSenderEmail('noreply@awarehub.com')
+      setEmailHeadline('Make this memorable')
+      setEmailBody('')
+      setEmailButton('View campaign')
+      setEmailHero('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80')
+      setSelectedTemplate('clean')
+      setSmsMessage('')
+      setSmsFrom('')
+      setSmsPreview('Keep it short and clear.')
+      setSmsTo('')
+      setCampaignStatus('draft')
+      setCampaignId(null)
+      setLastSavedAt(null)
+    }
+
+    const hydrateFromCampaign = (item: any) => {
+      setCampaignId(item.id)
+      setCampaignStatus((item.status as any) || 'draft')
+      setName(item.name || '')
+      setSummary(item.description || '')
+      if (item.start_at) setLaunchDate(item.start_at.slice(0, 10))
+      const meta = item.metadata || {}
+      if (meta.cadence) setCadence(meta.cadence)
+      if (meta.assetType) {
+        setAssetType(meta.assetType)
+        if (assetDefaultChannels[meta.assetType]) setChannels(assetDefaultChannels[meta.assetType])
+      }
+      if (Array.isArray(meta.channels) && meta.channels.length) setChannels(meta.channels)
+      if (Array.isArray(meta.audience)) setAudience(meta.audience)
+      if (meta.theme) setTheme(meta.theme)
+      if (meta.tone) setTone(meta.tone)
+      if (meta.emailSubject) setEmailSubject(meta.emailSubject)
+      if (meta.emailPreviewText) setEmailPreviewText(meta.emailPreviewText)
+      if (meta.senderName) setSenderName(meta.senderName)
+      if (meta.senderEmail) setSenderEmail(meta.senderEmail)
+      if (meta.emailHeadline) setEmailHeadline(meta.emailHeadline)
+      if (meta.emailBody) setEmailBody(meta.emailBody)
+      if (meta.emailButton) setEmailButton(meta.emailButton)
+      if (meta.emailHero) setEmailHero(meta.emailHero)
+      if (meta.selectedTemplate) setSelectedTemplate(meta.selectedTemplate)
+      if (meta.smsMessage) setSmsMessage(meta.smsMessage)
+      if (meta.smsFrom) setSmsFrom(meta.smsFrom)
+      if (meta.smsPreview) setSmsPreview(meta.smsPreview)
+      if (meta.smsTo) setSmsTo(meta.smsTo)
+      setLastSavedAt(item.updated_at || item.created_at || null)
+    }
+
+    const load = async () => {
+      const lastId = typeof window !== 'undefined' ? localStorage.getItem('campaign-builder-last-id') : null
+      if (lastId) {
+        const { data, error } = await supabase
+          .from('campaigns')
+          .select('id, name, description, status, start_at, metadata, updated_at, created_at')
+          .eq('id', lastId)
+          .maybeSingle()
+        if (!error && data) {
+          hydrateFromCampaign(data)
+        } else {
+          resetBlank()
+        }
+      } else {
+        resetBlank()
+      }
+      draftLoaded.current = true
+    }
+
+    load()
 
     const loadLists = async () => {
       const { data, error } = await supabase
         .from('recipient_lists')
-        .select('name')
+        .select('id, name')
         .order('name')
         .limit(50)
       if (!error && data?.length) {
         setAudienceOptions(data.map((d) => d.name))
+        const map: Record<string, string> = {}
+        data.forEach((d) => { map[d.name] = d.id })
+        setAudienceMap(map)
       }
     }
     loadLists()
@@ -294,6 +366,9 @@ export default function CampaignBuilderPage() {
       if (res.ok && data?.id) {
         setCampaignId(data.id)
         if (data.status) setCampaignStatus(data.status)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('campaign-builder-last-id', data.id)
+        }
       } else {
         console.error('Failed to save campaign:', data?.error)
       }
@@ -336,6 +411,35 @@ export default function CampaignBuilderPage() {
     smsTo,
   ])
 
+  useEffect(() => {
+    const populatePhones = async () => {
+      if (assetType !== 'sms') return
+      if (smsTo.trim()) return
+      const listIds = audience
+        .map((name) => audienceMap[name])
+        .filter(Boolean)
+        .slice(0, 3)
+      if (!listIds.length) return
+      const numbers = new Set<string>()
+      for (const id of listIds) {
+        const { data } = await supabase
+          .from('recipient_contact_memberships')
+          .select('contact:recipient_contacts(phone)')
+          .eq('list_id', id)
+          .not('contact.phone', 'is', null)
+          .limit(20)
+        data?.forEach((row: any) => {
+          const phone = row?.contact?.phone
+          if (phone) numbers.add(String(phone).trim())
+        })
+      }
+      if (numbers.size) {
+        setSmsTo(Array.from(numbers).join(', '))
+      }
+    }
+    populatePhones()
+  }, [assetType, audience, audienceMap, smsTo])
+
   const formatSavedTime = (ts: string | null) => {
     if (!ts) return ''
     try {
@@ -346,6 +450,16 @@ export default function CampaignBuilderPage() {
   }
 
   const sendSms = async () => {
+    if (!smsTo.trim()) {
+      setSendError('Add a recipient phone number.')
+      setSendState('error')
+      return
+    }
+    if (!smsMessage.trim()) {
+      setSendError('Message cannot be empty.')
+      setSendState('error')
+      return
+    }
     setSendError(null)
     try {
       const res = await fetch('/api/integrations/twilio/send', {
@@ -393,7 +507,7 @@ export default function CampaignBuilderPage() {
               {savingDraft ? 'Saving...' : lastSavedAt ? `Saved ${formatSavedTime(lastSavedAt)}` : 'Autosave enabled'}
             </div>
             <Badge variant="outline">{campaignStatus || 'draft'}</Badge>
-            <Button size="sm" onClick={persistDraft}>Save Now</Button>
+            <Button size="sm" onClick={() => persistDraft()}>Save Now</Button>
           </div>
         </div>
       </div>
@@ -510,7 +624,7 @@ export default function CampaignBuilderPage() {
                       return (
                         <button
                           key={type.key}
-                          onClick={() => setAssetType(type.key)}
+                          onClick={() => handleAssetTypeChange(type.key)}
                           className={`relative flex items-start gap-3 rounded-xl border-2 p-4 text-left transition ${
                             selected ? 'border-primary bg-primary/5 shadow-soft' : 'border-border/60 hover:border-primary/50'
                           }`}

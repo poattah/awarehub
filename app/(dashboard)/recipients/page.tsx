@@ -164,7 +164,7 @@ export default function RecipientsPage() {
         .from('recipient_lists')
         .select('id, name, type, tags, member_count, created_at')
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(50)
 
       if (error) {
         setListError('Supabase fetch failed; showing sample lists.')
