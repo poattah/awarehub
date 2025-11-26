@@ -180,12 +180,26 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center px-4 py-10">
-      <Card className="w-full max-w-xl border-border/70 p-6 shadow-soft-lg bg-white">
-        <div className="space-y-2 mb-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Signup form</p>
-          <h1 className="text-2xl font-bold">{form.name}</h1>
-          {form.description && <p className="text-sm text-muted-foreground">{form.description}</p>}
-        </div>
+      <div className="w-full max-w-3xl space-y-4">
+        {form.settings?.banner_url && (
+          <div className="w-full rounded-2xl overflow-hidden border border-border/70 shadow-soft-lg">
+            <div
+              className="h-40 bg-cover bg-center"
+              style={{ backgroundImage: `url(${form.settings.banner_url})` }}
+            />
+          </div>
+        )}
+        <Card className="w-full border-border/70 p-6 shadow-soft-lg bg-white">
+          <div className="space-y-2 mb-4 text-center">
+            {form.settings?.logo_url && (
+              <div className="flex justify-center mb-2">
+                <img src={form.settings.logo_url} alt="logo" className="h-12 object-contain" />
+              </div>
+            )}
+            <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Signup form</p>
+            <h1 className="text-2xl font-bold">{form.name}</h1>
+            {form.description && <p className="text-sm text-muted-foreground">{form.description}</p>}
+          </div>
         <form className="space-y-3" onSubmit={handleSubmit}>
           {(form.fields as any[] | undefined)?.filter((cfg) => cfg.enabled).map((cfg) => {
             if (cfg.type === 'select') {
@@ -285,7 +299,8 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
             {submitting ? 'Submitting...' : 'Submit'}
           </Button>
         </form>
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }
