@@ -130,6 +130,23 @@ export default function RecipientsPage() {
   const [signupAllowDuplicates, setSignupAllowDuplicates] = useState(false)
   const [signupConsentText, setSignupConsentText] = useState('I agree to receive updates from this organization.')
   const [signupStatus, setSignupStatus] = useState<string | null>(null)
+  const [signupFields, setSignupFields] = useState<Record<string, { enabled: boolean; required: boolean }>>({
+    email: { enabled: true, required: true },
+    first_name: { enabled: true, required: false },
+    last_name: { enabled: true, required: false },
+    phone: { enabled: true, required: false },
+    country: { enabled: true, required: false },
+    date_of_birth: { enabled: false, required: false },
+    gender: { enabled: false, required: false },
+    address: { enabled: false, required: false },
+    title: { enabled: false, required: false },
+    location: { enabled: false, required: false },
+    job_title: { enabled: false, required: false },
+    company_name: { enabled: false, required: false },
+    industry: { enabled: false, required: false },
+    team_size: { enabled: false, required: false },
+    work_phone: { enabled: false, required: false },
+  })
 
   const listSource = remoteLists.length ? remoteLists : lists
 
@@ -596,7 +613,11 @@ export default function RecipientsPage() {
           {signupError && <p className="text-xs text-red-600 mt-2">{signupError}</p>}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {signupForms.map((form) => {
-              const formUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/forms/${form.id}`
+              const baseUrl =
+                typeof window !== 'undefined'
+                  ? window.location.origin
+                  : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+              const formUrl = `${baseUrl}/forms/${form.id}`
               return (
                 <Card key={form.id} className="border-border/60 p-3 shadow-sm">
                   <div className="flex items-center justify-between gap-2">
@@ -781,6 +802,58 @@ export default function RecipientsPage() {
                 <Label>Consent text</Label>
                 <Input value={signupConsentText} onChange={(e) => setSignupConsentText(e.target.value)} />
               </div>
+              <div className="space-y-2 rounded-xl border border-border/60 bg-muted/30 p-3">
+                <p className="text-sm font-semibold">Fields</p>
+                {[
+                  { key: 'first_name', label: 'First name' },
+                  { key: 'last_name', label: 'Last name' },
+                  { key: 'phone', label: 'Phone' },
+                  { key: 'country', label: 'Country' },
+                  { key: 'date_of_birth', label: 'Date of birth' },
+                  { key: 'gender', label: 'Gender' },
+                  { key: 'address', label: 'Address' },
+                  { key: 'title', label: 'Title' },
+                  { key: 'location', label: 'Location' },
+                  { key: 'job_title', label: 'Job title' },
+                  { key: 'company_name', label: 'Company name' },
+                  { key: 'industry', label: 'Industry' },
+                  { key: 'team_size', label: 'Team size' },
+                  { key: 'work_phone', label: 'Work phone' },
+                ].map((field) => (
+                  <div key={field.key} className="flex items-center justify-between text-sm">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={signupFields[field.key]?.enabled}
+                        onChange={(e) =>
+                          setSignupFields((prev) => ({
+                            ...prev,
+                            [field.key]: { ...(prev[field.key] || { enabled: false, required: false }), enabled: e.target.checked },
+                          }))
+                        }
+                        className="h-4 w-4"
+                      />
+                      {field.label}
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={signupFields[field.key]?.required}
+                        disabled={!signupFields[field.key]?.enabled}
+                        onChange={(e) =>
+                          setSignupFields((prev) => ({
+                            ...prev,
+                            [field.key]: { ...(prev[field.key] || { enabled: false, required: false }), required: e.target.checked },
+                          }))
+                        }
+                        className="h-4 w-4"
+                      />
+                      Required
+                    </label>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">Email is always required.</p>
+              </div>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -809,9 +882,7 @@ export default function RecipientsPage() {
                     target_list_id: signupTargetList || null,
                     fields: {
                       email: { enabled: true, required: true },
-                      first_name: { enabled: true, required: false },
-                      last_name: { enabled: true, required: false },
-                      phone: { enabled: true, required: false },
+                      ...signupFields,
                     },
                     settings: {
                       double_opt_in: false,

@@ -26,13 +26,26 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [values, setValues] = useState({
+  const [values, setValues] = useState<Record<string, string>>({
     email: '',
     first_name: '',
     last_name: '',
     phone: '',
+    country: '',
+    date_of_birth: '',
+    gender: '',
+    address_street_address: '',
+    address_apartment: '',
+    address_city: '',
+    address_state: '',
+    address_postal_code: '',
     title: '',
     location: '',
+    job_title: '',
+    company_name: '',
+    industry: '',
+    team_size: '',
+    work_phone: '',
   })
 
   useEffect(() => {
@@ -54,9 +67,15 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!values.email.trim()) {
-      setError('Email is required')
-      return
+    const fieldConfig = (form?.fields || { email: { enabled: true, required: true } }) as Record<
+      string,
+      { enabled: boolean; required: boolean }
+    >
+    for (const [key, cfg] of Object.entries(fieldConfig)) {
+      if (cfg.enabled && cfg.required && !(values[key] || '').trim()) {
+        setError(`${key.replace('_', ' ')} is required`)
+        return
+      }
     }
     setSubmitting(true)
     setError(null)
@@ -87,13 +106,21 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
 
     // Upsert contact and membership
     const fullName =
-      `${values.first_name} ${values.last_name}`.trim() || values.email
-    const metadata: Record<string, string> = {}
-    if (values.first_name) metadata.first_name = values.first_name
-    if (values.last_name) metadata.last_name = values.last_name
-    if (values.phone) metadata.phone = values.phone
-    if (values.title) metadata.title = values.title
-    if (values.location) metadata.location = values.location
+      `${values.first_name || ''} ${values.last_name || ''}`.trim() || values.email
+
+    const metadata: Record<string, any> = {}
+    Object.entries(values).forEach(([k, v]) => {
+      if (k !== 'email' && !k.startsWith('address_') && v) metadata[k] = v
+    })
+    const addressFields = ['street_address', 'apartment', 'city', 'state', 'postal_code']
+    const address: Record<string, string> = {}
+    addressFields.forEach((f) => {
+      const key = `address_${f}`
+      if (values[key]) address[f] = values[key]
+    })
+    if (Object.keys(address).length) {
+      metadata.address = address
+    }
 
     const { data: contact } = await supabase
       .from('recipient_contacts')
@@ -155,56 +182,101 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
           {form.description && <p className="text-sm text-muted-foreground">{form.description}</p>}
         </div>
         <form className="space-y-3" onSubmit={handleSubmit}>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Email *</label>
-            <Input
-              type="email"
-              required
-              value={values.email}
-              onChange={(e) => setValues((prev) => ({ ...prev, email: e.target.value }))}
-              placeholder="you@example.com"
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">First name</label>
-              <Input
-                value={values.first_name}
-                onChange={(e) => setValues((prev) => ({ ...prev, first_name: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Last name</label>
-              <Input
-                value={values.last_name}
-                onChange={(e) => setValues((prev) => ({ ...prev, last_name: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Phone</label>
-            <Input
-              value={values.phone}
-              onChange={(e) => setValues((prev) => ({ ...prev, phone: e.target.value }))}
-              placeholder="+1 (555) 123-4567"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Job title</label>
-            <Input
-              value={values.title}
-              onChange={(e) => setValues((prev) => ({ ...prev, title: e.target.value }))}
-              placeholder="e.g., Marketing Manager"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Location</label>
-            <Input
-              value={values.location}
-              onChange={(e) => setValues((prev) => ({ ...prev, location: e.target.value }))}
-              placeholder="City, Country"
-            />
-          </div>
+          {Object.entries(form.fields || { email: { enabled: true, required: true } })
+            .filter(([, cfg]) => cfg?.enabled)
+            .map(([key, cfg]) => {
+              const label = key.replace('_', ' ')
+
+              if (key === 'gender') {
+                return (
+                  <div key={key} className="space-y-1">
+                    <label className="text-sm font-medium">
+                      {label}{cfg.required ? ' *' : ''}
+                    </label>
+                    <select
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      required={cfg.required}
+                      value={values[key] || ''}
+                      onChange={(e) =>
+                        setValues((prev) => ({
+                          ...prev,
+                          [key]: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Select</option>
+                      {['male','female','non-binary','prefer_not_to_say','other'].map((opt) => (
+                        <option key={opt} value={opt}>{opt.replace(/_/g, ' ')}</option>
+                      ))}
+                    </select>
+                  </div>
+                )
+              }
+
+              if (key === 'address') {
+                const addressCfg = (cfg as any).fields || {}
+                const addressFields = [
+                  { key: 'street_address', label: 'Street address' },
+                  { key: 'apartment', label: 'Apartment' },
+                  { key: 'city', label: 'City' },
+                  { key: 'state', label: 'State' },
+                  { key: 'postal_code', label: 'Postal code' },
+                ]
+                return (
+                  <div key={key} className="space-y-2 rounded-lg border border-border/60 p-3 bg-muted/20">
+                    <p className="text-sm font-semibold">Address{cfg.required ? ' *' : ''}</p>
+                    {addressFields.map((field) => (
+                      <div key={field.key} className="space-y-1">
+                        <label className="text-sm font-medium">
+                          {field.label}
+                          {addressCfg[field.key]?.required ? ' *' : ''}
+                        </label>
+                        <Input
+                          required={addressCfg[field.key]?.required}
+                          value={values[`address_${field.key}`] || ''}
+                          onChange={(e) =>
+                            setValues((prev) => ({
+                              ...prev,
+                              [`address_${field.key}`]: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )
+              }
+
+              return (
+                <div key={key} className="space-y-1">
+                  <label className="text-sm font-medium">
+                    {label}{cfg.required ? ' *' : ''}
+                  </label>
+                  <Input
+                    type={key === 'email' ? 'email' : key === 'phone' || key === 'work_phone' ? 'tel' : key === 'date_of_birth' ? 'date' : 'text'}
+                    required={cfg.required}
+                    value={values[key] || ''}
+                    onChange={(e) =>
+                      setValues((prev) => ({
+                        ...prev,
+                        [key]: e.target.value,
+                      }))
+                    }
+                    placeholder={
+                      key === 'email'
+                        ? 'you@example.com'
+                        : key === 'phone' || key === 'work_phone'
+                        ? '+1 (555) 123-4567'
+                        : key === 'title' || key === 'job_title'
+                        ? 'e.g., Marketing Manager'
+                        : key === 'location' || key === 'country'
+                        ? 'City, Country'
+                        : ''
+                    }
+                  />
+                </div>
+              )
+            })}
           <div className="text-xs text-muted-foreground">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked readOnly className="h-3 w-3" />

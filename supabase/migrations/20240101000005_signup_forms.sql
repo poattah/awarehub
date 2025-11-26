@@ -9,7 +9,22 @@ CREATE TABLE IF NOT EXISTS public.signup_forms (
     'email', jsonb_build_object('enabled', true, 'required', true),
     'first_name', jsonb_build_object('enabled', true, 'required', false),
     'last_name', jsonb_build_object('enabled', true, 'required', false),
-    'phone', jsonb_build_object('enabled', true, 'required', false)
+    'phone', jsonb_build_object('enabled', true, 'required', false),
+    'country', jsonb_build_object('enabled', true, 'required', false),
+    'date_of_birth', jsonb_build_object('enabled', false, 'required', false),
+    'gender', jsonb_build_object('enabled', false, 'required', false, 'enum', ARRAY['male','female','non-binary','prefer_not_to_say','other']),
+    'address', jsonb_build_object('enabled', false, 'required', false, 'fields', jsonb_build_object(
+      'street_address', jsonb_build_object('enabled', true, 'required', false),
+      'apartment', jsonb_build_object('enabled', false, 'required', false),
+      'city', jsonb_build_object('enabled', true, 'required', false),
+      'state', jsonb_build_object('enabled', true, 'required', false),
+      'postal_code', jsonb_build_object('enabled', true, 'required', false)
+    )),
+    'job_title', jsonb_build_object('enabled', false, 'required', false),
+    'company_name', jsonb_build_object('enabled', false, 'required', false),
+    'industry', jsonb_build_object('enabled', false, 'required', false),
+    'team_size', jsonb_build_object('enabled', false, 'required', false),
+    'work_phone', jsonb_build_object('enabled', false, 'required', false)
   ),
   settings JSONB NOT NULL DEFAULT jsonb_build_object(
     'double_opt_in', false,
