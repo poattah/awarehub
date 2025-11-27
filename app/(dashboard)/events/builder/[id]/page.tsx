@@ -1,0 +1,266 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { supabase } from '@/lib/supabase'
+
+export default function EventBuilderPage({ params }: { params: { id: string } }) {
+  const { id } = params
+  const router = useRouter()
+  const [event, setEvent] = useState<any>(null)
+  const [orgId, setOrgId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [statusMsg, setStatusMsg] = useState<string | null>(null)
+  const [themePrimary, setThemePrimary] = useState('#3b82f6')
+  const [themeBg, setThemeBg] = useState('#ffffff')
+  const [themeText, setThemeText] = useState('#0f172a')
+  const [themeButtonBg, setThemeButtonBg] = useState('#3b82f6')
+  const [themeButtonText, setThemeButtonText] = useState('#ffffff')
+  const [themeHeadingFont, setThemeHeadingFont] = useState('Inter')
+  const [themeBodyFont, setThemeBodyFont] = useState('Inter')
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData.user?.id
+      if (!userId) {
+        setError('Not signed in')
+        setLoading(false)
+        return
+      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', userId)
+        .maybeSingle()
+      if (!profile?.organization_id) {
+        setError('No organization context')
+        setLoading(false)
+        return
+      }
+      setOrgId(profile.organization_id)
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', id)
+        .eq('organization_id', profile.organization_id)
+        .maybeSingle()
+      if (error || !data) {
+        setError('Event not found')
+        setLoading(false)
+        return
+      }
+      setEvent({ ...data })
+      const theme = ((data as any).settings?.theme || {}) as any
+      if (theme.primary) setThemePrimary(theme.primary)
+      if (theme.background) setThemeBg(theme.background)
+      if (theme.text) setThemeText(theme.text)
+      if (theme.buttonBg) setThemeButtonBg(theme.buttonBg)
+      if (theme.buttonText) setThemeButtonText(theme.buttonText)
+      if (theme.headingFont) setThemeHeadingFont(theme.headingFont)
+      if (theme.bodyFont) setThemeBodyFont(theme.bodyFont)
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  const updateField = (key: string, value: any) => {
+    setEvent((prev: any) => ({ ...prev, [key]: value }))
+  }
+
+  const save = async () => {
+    if (!event || !orgId) return
+    if (!event.name?.trim() || !event.start_at) {
+      setError('Name and start time are required')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const nextSettings = {
+      ...(event.settings || {}),
+      theme: {
+        primary: themePrimary,
+        background: themeBg,
+        text: themeText,
+        buttonBg: themeButtonBg,
+        buttonText: themeButtonText,
+        headingFont: themeHeadingFont,
+        bodyFont: themeBodyFont,
+      },
+    }
+    const { error } = await supabase
+      .from('events')
+      .update({
+        name: event.name.trim(),
+        description: event.description?.trim() || null,
+        start_at: event.start_at,
+        end_at: event.end_at || null,
+        location: event.location || null,
+        virtual_url: event.virtual_url || null,
+        capacity: event.capacity || null,
+        list_id: event.list_id || null,
+        status: event.status || 'draft',
+        brand_kit_id: event.brand_kit_id || null,
+        cover_url: event.cover_url || null,
+        settings: nextSettings,
+      })
+      .eq('id', id)
+      .eq('organization_id', orgId)
+    setSaving(false)
+    if (error) {
+      setError(error.message || 'Failed to save event')
+      return
+    }
+    setStatusMsg('Saved')
+    setTimeout(() => setStatusMsg(null), 1200)
+  }
+
+  if (loading) return <div className="p-6">Loading…</div>
+  if (error) return <div className="p-6 text-red-600">{error}</div>
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Event builder</h1>
+          <p className="text-muted-foreground">Edit and publish your event signup page.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => router.push('/events')}>Back</Button>
+          <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+        </div>
+      </div>
+      {statusMsg && <p className="text-sm text-green-600">{statusMsg}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-border/60">
+          <CardHeader>
+            <CardTitle>Basics</CardTitle>
+            <CardDescription>Core details about your event.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label>Name</Label>
+              <Input value={event.name || ''} onChange={(e) => updateField('name', e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Description</Label>
+              <Textarea rows={3} value={event.description || ''} onChange={(e) => updateField('description', e.target.value)} />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Start</Label>
+                <Input type="datetime-local" value={event.start_at || ''} onChange={(e) => updateField('start_at', e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>End</Label>
+                <Input type="datetime-local" value={event.end_at || ''} onChange={(e) => updateField('end_at', e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Location</Label>
+              <Input value={event.location || ''} onChange={(e) => updateField('location', e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Virtual link</Label>
+              <Input value={event.virtual_url || ''} onChange={(e) => updateField('virtual_url', e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Capacity</Label>
+              <Input type="number" value={event.capacity || ''} onChange={(e) => updateField('capacity', e.target.value ? Number(e.target.value) : null)} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardHeader>
+            <CardTitle>Branding & Targeting</CardTitle>
+            <CardDescription>Apply brand and route registrations.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label>Cover image URL</Label>
+              <Input value={event.cover_url || ''} onChange={(e) => updateField('cover_url', e.target.value)} placeholder="https://..." />
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <select
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                value={event.status || 'draft'}
+                onChange={(e) => updateField('status', e.target.value)}
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Primary color</Label>
+                <Input type="color" value={themePrimary} onChange={(e) => setThemePrimary(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Background color</Label>
+                <Input type="color" value={themeBg} onChange={(e) => setThemeBg(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Text color</Label>
+                <Input type="color" value={themeText} onChange={(e) => setThemeText(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Button BG</Label>
+                <Input type="color" value={themeButtonBg} onChange={(e) => setThemeButtonBg(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Button text</Label>
+                <Input type="color" value={themeButtonText} onChange={(e) => setThemeButtonText(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Heading font</Label>
+                <select
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  value={themeHeadingFont}
+                  onChange={(e) => setThemeHeadingFont(e.target.value)}
+                >
+                  {['Inter','Manrope','Space Grotesk','Poppins','Open Sans'].map((f) => <option key={f}>{f}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>Body font</Label>
+                <select
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  value={themeBodyFont}
+                  onChange={(e) => setThemeBodyFont(e.target.value)}
+                >
+                  {['Inter','Manrope','Space Grotesk','Poppins','Open Sans'].map((f) => <option key={f}>{f}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-muted/40 p-3 text-sm space-y-1">
+              <p className="font-semibold">Theme preview</p>
+              <div className="flex items-center gap-2">
+                <span className="h-8 w-8 rounded-full border" style={{ background: themePrimary }} />
+                <span className="h-8 w-8 rounded-full border" style={{ background: themeBg }} />
+                <span className="h-8 w-8 rounded-full border" style={{ background: themeText }} />
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Button style={{ background: themeButtonBg, color: themeButtonText }}>Primary</Button>
+                <Button variant="outline">Outline</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

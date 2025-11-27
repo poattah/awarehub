@@ -261,15 +261,22 @@ export default function CalendarPage() {
     const loadRemoteEvents = async () => {
       if (!orgId) return
       setLoadingRemote(true)
-      const { data, error } = await supabase
-        .from('calendar_events')
-        .select('id, title, description, category, start_date')
-        .eq('organization_id', orgId)
-        .order('start_date', { ascending: true })
-        .limit(200)
+      const [calRes, orgRes] = await Promise.all([
+        supabase
+          .from('calendar_events')
+          .select('id, title, description, category, start_date')
+          .eq('organization_id', orgId)
+          .order('start_date', { ascending: true })
+          .limit(200),
+        supabase
+          .from('events')
+          .select('id, name, description, start_at')
+          .eq('organization_id', orgId)
+          .order('start_at', { ascending: true })
+          .limit(200),
+      ])
       setLoadingRemote(false)
-      if (error || !data) return
-      const mapped: CalendarEvent[] = data.map((e: any) => {
+      const mappedCal: CalendarEvent[] = (calRes.data || []).map((e: any) => {
         const cat = allowedCategories.includes(e.category) ? e.category : 'Other'
         return {
           id: e.id,
@@ -280,7 +287,15 @@ export default function CalendarPage() {
           timeRange: 'All day',
         }
       })
-      setUserEvents(mapped)
+      const mappedOrg: CalendarEvent[] = (orgRes.data || []).map((e: any) => ({
+        id: e.id,
+        title: e.name,
+        description: e.description || '',
+        date: e.start_at,
+        category: allowedCategories.includes('Corporate Events') ? 'Corporate Events' : 'Other',
+        timeRange: 'All day',
+      }))
+      setUserEvents([...mappedCal, ...mappedOrg])
     }
     loadRemoteEvents()
   }, [orgId])

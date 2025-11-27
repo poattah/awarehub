@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 export default function DashboardPage() {
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
+  const [customEvents, setCustomEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [orgId, setOrgId] = useState<string | null>(null)
 
@@ -40,7 +41,7 @@ export default function DashboardPage() {
     let active = true
     const load = async () => {
       setLoading(true)
-      const [campaignRes, eventsRes] = await Promise.all([
+      const [campaignRes, eventsRes, customEventsRes] = await Promise.all([
         supabase
           .from('campaigns')
           .select('id, name, status, start_at, metadata, updated_at')
@@ -54,10 +55,18 @@ export default function DashboardPage() {
           .gte('start_date', new Date().toISOString().slice(0, 10))
           .order('start_date', { ascending: true })
           .limit(10),
+        supabase
+          .from('events')
+          .select('id, name, start_at, location, status')
+          .eq('organization_id', orgId)
+          .gte('start_at', new Date().toISOString())
+          .order('start_at', { ascending: true })
+          .limit(10),
       ])
       if (!active) return
       setCampaigns(campaignRes.data || [])
       setEvents(eventsRes.data || [])
+      setCustomEvents(customEventsRes.data || [])
       setLoading(false)
     }
     load()
@@ -70,8 +79,8 @@ export default function DashboardPage() {
   const activeCount = campaigns.filter((c) => c.status === 'active').length
   const draftCount = campaigns.filter((c) => c.status === 'draft').length
   const scheduledCount = campaigns.filter((c) => c.status === 'scheduled').length
-  const hasEvents = events.length > 0
-  const upcomingCount = hasEvents ? events.length : 8
+  const hasEvents = events.length > 0 || customEvents.length > 0
+  const upcomingCount = hasEvents ? (events.length + customEvents.length) : 8
 
   const recentList = hasCampaigns
     ? campaigns.slice(0, 5).map((c) => ({
@@ -84,7 +93,7 @@ export default function DashboardPage() {
 
   const now = new Date()
   const upcoming = (() => {
-    const real = events
+    const calEvents = events
       .filter((e) => (e.start_date ? new Date(e.start_date) >= now : false))
       .map((e) => ({
         id: e.id,
@@ -92,8 +101,18 @@ export default function DashboardPage() {
         date: e.start_date ? new Date(e.start_date).toLocaleDateString() : 'Date TBC',
         category: e.category,
       }))
+    const orgEvents = customEvents
+      .filter((e) => (e.start_at ? new Date(e.start_at) >= now : false))
+      .map((e) => ({
+        id: e.id,
+        name: e.name,
+        date: e.start_at ? new Date(e.start_at).toLocaleDateString() : 'Date TBC',
+        category: 'Event',
+      }))
+    const combined = [...calEvents, ...orgEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     const fallback = upcomingEvents.filter((e) => (e.date ? new Date(e.date) >= now : true))
-    return (real.length ? real : []).concat(fallback).slice(0, 6)
+    const base = combined.length ? combined : []
+    return base.concat(fallback).slice(0, 6)
   })()
 
   return (

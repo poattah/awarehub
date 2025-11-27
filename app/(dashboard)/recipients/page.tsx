@@ -226,6 +226,20 @@ export default function RecipientsPage() {
   const [editLocation, setEditLocation] = useState('')
   const [editTags, setEditTags] = useState('')
   const [editChannels, setEditChannels] = useState('')
+  const [showEventModal, setShowEventModal] = useState(false)
+  const [eventName, setEventName] = useState('')
+  const [eventDesc, setEventDesc] = useState('')
+  const [eventStart, setEventStart] = useState('')
+  const [eventEnd, setEventEnd] = useState('')
+  const [eventLocation, setEventLocation] = useState('')
+  const [eventUrl, setEventUrl] = useState('')
+  const [eventCapacity, setEventCapacity] = useState<number | ''>('')
+  const [eventTargetList, setEventTargetList] = useState<string | ''>('')
+  const [eventStatusMsg, setEventStatusMsg] = useState<string | null>(null)
+  const [eventsList, setEventsList] = useState<any[]>([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [listSourceForEvents, setListSourceForEvents] = useState<List[]>([])
   const baseSignupFields = [
     { key: 'email', label: 'Email', type: 'email', enabled: true, required: true },
   ]
@@ -306,7 +320,23 @@ export default function RecipientsPage() {
 
     document.addEventListener('mousedown', handleClickAway)
     return () => document.removeEventListener('mousedown', handleClickAway)
-  }, [openMenuId])
+  }, [openMenuId, contactMenuId])
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      if (activeTab !== 'growth' || !currentOrgId) return
+      setEventsLoading(true)
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, name, description, start_at, location, status')
+        .eq('organization_id', currentOrgId)
+        .order('start_at', { ascending: true })
+        .limit(50)
+      setEventsLoading(false)
+      if (!error && data) setEventsList(data)
+    }
+    loadEvents()
+  }, [activeTab, currentOrgId, refreshTrigger])
 
   const fetchLists = useCallback(
     async (skipSeed?: boolean) => {
@@ -335,6 +365,7 @@ export default function RecipientsPage() {
           tags: item.tags || [],
         }))
         setRemoteLists(mapped)
+        setListSourceForEvents(mapped)
         setListLoading(false)
         return
       }
@@ -351,6 +382,7 @@ export default function RecipientsPage() {
       }
 
       setListError('No lists found in Supabase; showing sample lists.')
+      setListSourceForEvents(lists)
       setListLoading(false)
     },
     [autoSeedAttempted]
@@ -856,6 +888,12 @@ export default function RecipientsPage() {
               description="Add campaign champions as reviewers before launch."
               cta="Add champions"
             />
+            <GrowthCard
+              title="Create event"
+              description="Publish an event signup page with RSVP tracking."
+              cta="Launch"
+              onClick={() => setShowEventModal(true)}
+            />
           </div>
         </Card>
         <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-soft-lg">
@@ -1028,6 +1066,55 @@ export default function RecipientsPage() {
         </div>
         </div>
         ) : null}
+        <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-soft-lg">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="font-semibold">Events</p>
+              <p className="text-sm text-muted-foreground">Publish and share event signup pages.</p>
+            </div>
+            {eventsLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
+          </div>
+          <div className="space-y-2">
+            {!eventsLoading && !eventsList.length && (
+              <p className="text-sm text-muted-foreground">No events yet. Create one to get started.</p>
+            )}
+            {eventsList.map((ev) => {
+              const baseUrl =
+                typeof window !== 'undefined'
+                  ? window.location.origin
+                  : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+              const eventUrl = `${baseUrl}/events/${ev.id}`
+              return (
+                <div key={ev.id} className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between relative">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{ev.name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {ev.description || 'No description'} • {new Date(ev.start_at).toLocaleString()} • {ev.location || 'Virtual'}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/events/builder/${ev.id}`}><Button size="sm" variant="outline">Builder</Button></Link>
+                    <Link href={`/events/${ev.id}`} target="_blank"><Button size="sm" variant="outline">View</Button></Link>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(eventUrl)
+                          setWaitlistStatus('Link copied')
+                        } catch {
+                          setWaitlistStatus('Copy failed')
+                        }
+                      }}
+                    >
+                      Copy link
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
       <Card className="border-border/60 shadow-soft-lg">
@@ -1253,6 +1340,111 @@ export default function RecipientsPage() {
                 }}
               >
                 Create form
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showEventModal && (
+        <Modal onClose={() => setShowEventModal(false)}>
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Create event</p>
+                <p className="text-sm text-muted-foreground">Publish an Eventbrite-style signup page.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowEventModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Name</Label>
+                <Input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g., Launch webinar" />
+              </div>
+              <div className="space-y-1">
+                <Label>Target list (optional)</Label>
+                <select
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  value={eventTargetList}
+                  onChange={(e) => setEventTargetList(e.target.value)}
+                >
+                  <option value="">None</option>
+                  {listSource.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <Label>Description</Label>
+                <Textarea rows={3} value={eventDesc} onChange={(e) => setEventDesc(e.target.value)} placeholder="What is the event about?" />
+              </div>
+              <div className="space-y-1">
+                <Label>Start</Label>
+                <Input type="datetime-local" value={eventStart} onChange={(e) => setEventStart(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>End (optional)</Label>
+                <Input type="datetime-local" value={eventEnd} onChange={(e) => setEventEnd(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Location</Label>
+                <Input value={eventLocation} onChange={(e) => setEventLocation(e.target.value)} placeholder="Venue or City" />
+              </div>
+              <div className="space-y-1">
+                <Label>Virtual link (optional)</Label>
+                <Input value={eventUrl} onChange={(e) => setEventUrl(e.target.value)} placeholder="Meeting/stream link" />
+              </div>
+              <div className="space-y-1">
+                <Label>Capacity (optional)</Label>
+                <Input
+                  type="number"
+                  value={eventCapacity}
+                  onChange={(e) => setEventCapacity(e.target.value ? Number(e.target.value) : '')}
+                  placeholder="e.g., 200"
+                />
+              </div>
+            </div>
+            {eventStatusMsg && <p className="text-xs text-muted-foreground">{eventStatusMsg}</p>}
+            <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setShowEventModal(false)}>Cancel</Button>
+                <Button
+                  onClick={async () => {
+                    if (!currentOrgId) {
+                      setEventStatusMsg('No organization context; please sign in again.')
+                    return
+                  }
+                  if (!eventName.trim() || !eventStart) {
+                    setEventStatusMsg('Name and start time are required.')
+                    return
+                  }
+                  setEventStatusMsg('Saving event...')
+                  const { error } = await supabase.from('events').insert({
+                    organization_id: currentOrgId,
+                    name: eventName.trim(),
+                    description: eventDesc.trim(),
+                    start_at: eventStart,
+                    end_at: eventEnd || null,
+                    location: eventLocation,
+                    virtual_url: eventUrl,
+                    capacity: eventCapacity === '' ? null : eventCapacity,
+                    list_id: eventTargetList || null,
+                    status: 'published',
+                  })
+                  if (error) {
+                    setEventStatusMsg(error.message || 'Failed to save event')
+                    return
+                  }
+                  setEventStatusMsg('Event created. Copy link from the events list after refresh.')
+                  setRefreshTrigger((x) => x + 1)
+                  setTimeout(() => {
+                    setShowEventModal(false)
+                    setEventStatusMsg(null)
+                  }, 800)
+                }}
+              >
+                Create event
               </Button>
             </div>
           </div>
