@@ -24,3 +24,12 @@
  ✓ Compiled /settings in 698ms (824 modules)
  ✓ Compiled /api/settings/team in 197ms (517 modules)
  ✓ Compiled /dashboard in 56ms (523 modules)
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 914ms (917 modules)
+ ✓ Compiled /campaigns in 80ms (467 modules)
+ ✓ Compiled /recipients in 64ms (479 modules)
+ ✓ Compiled /templates in 263ms (955 modules)
+ ✓ Compiled /brand in 205ms (964 modules)
+ ✓ Compiled /analytics in 175ms (973 modules)
+ ✓ Compiled /integrations in 164ms (983 modules)
+ ✓ Compiled /forms/builder/[id] in 146ms (519 modules)
