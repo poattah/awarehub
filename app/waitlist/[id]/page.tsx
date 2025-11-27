@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Space_Grotesk, Manrope } from 'next/font/google'
 import { Loader2, Sparkles } from 'lucide-react'
+import { logAnalyticsEvent } from '@/lib/analytics'
 
 const display = Space_Grotesk({ subsets: ['latin'], weight: ['500', '600', '700'] })
 const body = Manrope({ subsets: ['latin'], weight: ['400', '500', '600'] })
@@ -27,6 +28,7 @@ type FormRecord = {
   fields?: FieldDef[]
   settings?: Record<string, any>
   success_config?: Record<string, any>
+  organization_id?: string | null
 }
 
 const defaultFields: FieldDef[] = [
@@ -79,7 +81,7 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
     const loadForm = async () => {
       const { data, error } = await supabase
         .from('signup_forms')
-        .select('id, name, description, target_list_id, fields, settings, success_config')
+        .select('id, name, description, target_list_id, fields, settings, success_config, organization_id')
         .eq('id', id)
         .maybeSingle()
 
@@ -98,6 +100,16 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
     }
     loadForm()
   }, [id])
+
+  useEffect(() => {
+    if (form?.id) {
+      logAnalyticsEvent({
+        event_type: 'form_view',
+        form_id: form.id,
+        metadata: { kind: 'waitlist' },
+      })
+    }
+  }, [form?.id])
 
   const fields = useMemo(() => {
     const fromForm = (form?.fields as FieldDef[] | undefined) || []
@@ -142,6 +154,11 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
     if (submissionError) {
       setError(submissionError.message)
       setSubmitting(false)
+      logAnalyticsEvent({
+        event_type: 'form_submit_error',
+        form_id: id,
+        metadata: { kind: 'waitlist', message: submissionError.message },
+      })
       return
     }
 
@@ -166,19 +183,25 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
           tags: [],
           channels: ['Email'],
           metadata,
+          organization_id: form?.organization_id || null,
         } as any,
-        { onConflict: 'email' }
+        { onConflict: 'organization_id,email' }
       )
       .select('id')
       .maybeSingle()
 
     if (contact?.id && form.target_list_id) {
-      await supabase
+      const { error: membershipError } = await supabase
         .from('recipient_contact_memberships')
         .upsert(
           { list_id: form.target_list_id, contact_id: contact.id } as any,
           { onConflict: 'list_id,contact_id' }
         )
+      if (membershipError) {
+        setError(membershipError.message)
+        setSubmitting(false)
+        return
+      }
     }
 
     setSubmitting(false)
@@ -190,6 +213,12 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
     if (successConfig.redirect_url) {
       router.push(successConfig.redirect_url)
     }
+
+    logAnalyticsEvent({
+      event_type: 'form_submit',
+      form_id: id,
+      metadata: { kind: 'waitlist', target_list_id: form?.target_list_id },
+    })
   }
 
   if (loading) {

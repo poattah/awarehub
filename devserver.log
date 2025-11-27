@@ -263,3 +263,115 @@ https://nextjs.org/docs/messages/module-not-found
  ✓ Compiled /templates in 207ms (544 modules)
  ✓ Compiled /brand in 214ms (552 modules)
  ✓ Compiled /analytics in 127ms (561 modules)
+ ✓ Compiled /calendar in 453ms (498 modules)
+ ✓ Compiled /campaigns in 106ms (508 modules)
+ ○ Compiling /campaigns/new ...
+ ✓ Compiled /campaigns/new in 851ms (1101 modules)
+ ✓ Compiled /api/campaigns/save in 219ms (583 modules)
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+✅ Campaign saved successfully: {
+  id: '2f2cf58f-9f0d-4c71-b700-edefab63960e',
+  status: 'draft',
+  organization_id: '8f21ac0f-3f7b-47e0-b6da-f8439399fd9e',
+  user_id: '4d871178-b33a-49e2-b9db-d828d25e5c8a'
+}
+ ✓ Compiled in 614ms (1195 modules)
+ ✓ Compiled in 313ms (1101 modules)
+ ✓ Compiled in 827ms (1103 modules)
+ ✓ Compiled in 500ms (1103 modules)
+ ✓ Compiled in 346ms (627 modules)
+ ✓ Compiled in 423ms (627 modules)
+ ✓ Compiled in 367ms (627 modules)
+ ✓ Compiled in 290ms (627 modules)
+ ✓ Compiled /campaigns in 351ms (485 modules)
+ ✓ Compiled /api/campaigns/save in 300ms (579 modules)
+ ✓ Compiled /settings in 358ms (609 modules)
+ ✓ Compiled /analytics in 301ms (629 modules)
+ ✓ Compiled in 786ms (1070 modules)
+ ✓ Compiled in 587ms (1070 modules)
+ ✓ Compiled in 589ms (1070 modules)
+ ✓ Compiled /auth/login in 251ms (447 modules)
+ ✓ Compiled /api/auth/ensure-profile in 270ms (541 modules)
+ ✓ Compiled /forms/builder/[id] in 284ms (547 modules)
+ ✓ Compiled in 497ms (1058 modules)
+ ✓ Compiled in 825ms (1072 modules)
+ ✓ Compiled /forms/[id] in 190ms (449 modules)
+ ✓ Compiled in 497ms (1063 modules)
+ ✓ Compiled in 651ms (1063 modules)
+ ✓ Compiled /growth in 136ms (440 modules)
+ ✓ Compiled in 463ms (1067 modules)
+ ✓ Compiled in 855ms (1060 modules)
+ ✓ Compiled in 335ms (1060 modules)
+ ✓ Compiled /dashboard in 341ms (438 modules)
+ ✓ Compiled /waitlist/builder/[id] in 372ms (442 modules)
+ ✓ Compiled /forms/builder/[id] in 102ms (449 modules)
+ ✓ Compiled in 722ms (1060 modules)
+ ✓ Compiled in 726ms (1060 modules)
+ ✓ Compiled /campaigns in 357ms (443 modules)
+ ✓ Compiled /calendar in 292ms (499 modules)
+ ✓ Compiled /dashboard in 110ms (504 modules)

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { logAnalyticsEvent } from '@/lib/analytics'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -174,6 +175,11 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
       setStatus(null)
     } else {
       setStatus('Saved')
+      logAnalyticsEvent({
+        event_type: 'builder_save',
+        form_id: id,
+        metadata: { kind: formKind, fields_count: payload.length },
+      })
       setTimeout(() => setStatus(null), 1500)
     }
   }

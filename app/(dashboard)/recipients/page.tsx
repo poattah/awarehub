@@ -200,6 +200,8 @@ export default function RecipientsPage() {
   const [signupAllowDuplicates, setSignupAllowDuplicates] = useState(false)
   const [signupConsentText, setSignupConsentText] = useState('I agree to receive updates from this organization.')
   const [signupStatus, setSignupStatus] = useState<string | null>(null)
+  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null)
+  const [orgLoading, setOrgLoading] = useState(true)
   const [waitlistName, setWaitlistName] = useState('')
   const [waitlistDescription, setWaitlistDescription] = useState('')
   const [waitlistTargetList, setWaitlistTargetList] = useState<string>('')
@@ -233,6 +235,27 @@ export default function RecipientsPage() {
     'Unsuppress current members',
     'Delete List',
   ]
+
+  useEffect(() => {
+    const loadOrg = async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData.user?.id
+      if (!userId) {
+        setOrgLoading(false)
+        return
+      }
+      const { data } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', userId)
+        .maybeSingle()
+      if (data?.organization_id) {
+        setCurrentOrgId(data.organization_id as string)
+      }
+      setOrgLoading(false)
+    }
+    loadOrg()
+  }, [])
 
   useEffect(() => {
     if (isGrowthOnly) {
@@ -948,6 +971,14 @@ export default function RecipientsPage() {
                     setSignupError('Name is required')
                     return
                   }
+                  if (orgLoading) {
+                    setSignupError('Loading organization context, please try again in a moment.')
+                    return
+                  }
+                  if (!currentOrgId) {
+                    setSignupError('No organization context; please sign in again.')
+                    return
+                  }
                   setSignupError(null)
                   setSignupStatus('Saving...')
                   const payload = {
@@ -955,6 +986,7 @@ export default function RecipientsPage() {
                     description: signupDescription.trim(),
                     target_list_id: signupTargetList || null,
                     kind: 'signup',
+                    organization_id: currentOrgId,
                     fields: baseSignupFields,
                     settings: {
                       double_opt_in: false,
@@ -1074,6 +1106,14 @@ export default function RecipientsPage() {
                     setWaitlistError('Name is required')
                     return
                   }
+                  if (orgLoading) {
+                    setWaitlistError('Loading organization context, please try again in a moment.')
+                    return
+                  }
+                  if (!currentOrgId) {
+                    setWaitlistError('No organization context; please refresh and sign in again.')
+                    return
+                  }
                   setWaitlistError(null)
                   setWaitlistStatus('Saving...')
                   const payload = {
@@ -1081,6 +1121,7 @@ export default function RecipientsPage() {
                     description: waitlistDescription.trim(),
                     target_list_id: waitlistTargetList || null,
                     kind: 'waitlist',
+                    organization_id: currentOrgId,
                     fields: baseSignupFields,
                     settings: {
                       double_opt_in: false,
