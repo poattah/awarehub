@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -82,6 +83,7 @@ const contactsByList: Record<number, Contact[]> = {
 }
 
 export default function RecipientsPage() {
+  const router = useRouter()
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'lists' | 'growth'>('lists')
   const [viewMode, setViewMode] = useState<'lists' | 'contacts'>('lists')
@@ -840,6 +842,8 @@ export default function RecipientsPage() {
                     setSignupStatus(null)
                     return
                   }
+                  // Navigate directly to builder after creation
+                  router.push(`/forms/builder/${data.id}`)
                   setSignupForms((prev) => [data, ...prev])
                   setSignupName('')
                   setSignupDescription('')
