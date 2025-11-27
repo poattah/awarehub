@@ -158,6 +158,7 @@ export default function RecipientsPage() {
   const [previewContact, setPreviewContact] = useState<Contact | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null)
   const [contactMenuId, setContactMenuId] = useState<string | number | null>(null)
+  const [contactSort, setContactSort] = useState<{ key: 'name' | 'email' | 'title' | 'location'; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' })
   const [remoteLists, setRemoteLists] = useState<List[]>(lists)
   const [listLoading, setListLoading] = useState(false)
   const [listError, setListError] = useState<string | null>(null)
@@ -216,6 +217,15 @@ export default function RecipientsPage() {
   const [waitlistCtaLabel, setWaitlistCtaLabel] = useState('Join waitlist')
   const [savingContactId, setSavingContactId] = useState<string | number | null>(null)
   const [deletingContactId, setDeletingContactId] = useState<string | number | null>(null)
+  const [showEditContactModal, setShowEditContactModal] = useState(false)
+  const [editContact, setEditContact] = useState<Contact | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editPhone, setEditPhone] = useState('')
+  const [editTitle, setEditTitle] = useState('')
+  const [editLocation, setEditLocation] = useState('')
+  const [editTags, setEditTags] = useState('')
+  const [editChannels, setEditChannels] = useState('')
   const baseSignupFields = [
     { key: 'email', label: 'Email', type: 'email', enabled: true, required: true },
   ]
@@ -604,19 +614,40 @@ export default function RecipientsPage() {
               <span>/</span>
               <span className="text-foreground font-semibold">{listSource.find((l) => l.id === selectedListId)?.name}</span>
             </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold">Contacts in {listSource.find((l) => l.id === selectedListId)?.name}</p>
-                  <p className="text-xs text-muted-foreground">Drill down, edit inline, or preview a contact.</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setViewMode('lists')}>Back to lists</Button>
-                  <Button variant="outline" size="sm" onClick={() => setShowContactModal(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add contact
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">Contacts in {listSource.find((l) => l.id === selectedListId)?.name}</p>
+                <p className="text-xs text-muted-foreground">Drill down, edit inline, or preview a contact.</p>
+              </div>
+              <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>Sort by</span>
+                  <select
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                    value={contactSort.key}
+                    onChange={(e) => setContactSort((prev) => ({ ...prev, key: e.target.value as any }))}
+                  >
+                    <option value="name">Name</option>
+                    <option value="email">Email</option>
+                    <option value="title">Title</option>
+                    <option value="location">Location</option>
+                  </select>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="px-2"
+                    onClick={() => setContactSort((prev) => ({ ...prev, dir: prev.dir === 'asc' ? 'desc' : 'asc' }))}
+                  >
+                    {contactSort.dir === 'asc' ? '↑' : '↓'}
                   </Button>
                 </div>
+                <Button variant="outline" size="sm" onClick={() => setViewMode('lists')}>Back to lists</Button>
+                <Button variant="outline" size="sm" onClick={() => setShowContactModal(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add contact
+                </Button>
               </div>
+            </div>
 
             <div className="grid grid-cols-[1.6fr,1.8fr,1.3fr,1fr,0.9fr] gap-3 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
               <span>Name</span>
@@ -636,7 +667,17 @@ export default function RecipientsPage() {
                 Loading contacts...
               </div>
             )}
-            {(contacts || []).map((contact, idx) => (
+            {([...contacts] as Contact[])
+              .sort((a, b) => {
+                const key = contactSort.key
+                const dir = contactSort.dir === 'asc' ? 1 : -1
+                const av = (a as any)[key]?.toLowerCase?.() || ''
+                const bv = (b as any)[key]?.toLowerCase?.() || ''
+                if (av < bv) return -1 * dir
+                if (av > bv) return 1 * dir
+                return 0
+              })
+              .map((contact, idx) => (
               <div
                 key={contact.id}
                 className="grid grid-cols-[1.6fr,1.8fr,1.3fr,1fr,0.9fr] gap-3 items-center rounded-xl border border-border/60 bg-card px-3 py-3 shadow-soft"
@@ -694,6 +735,23 @@ export default function RecipientsPage() {
                   </Button>
                   {contactMenuId === contact.id && (
                     <div className="absolute right-0 top-10 z-20 w-44 rounded-lg border border-border/70 bg-card shadow-soft-lg">
+                      <button
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                        onClick={() => {
+                          setContactMenuId(null)
+                          setEditContact(contact)
+                          setEditName(contact.name)
+                          setEditEmail(contact.email)
+                          setEditPhone(contact.phone)
+                          setEditTitle(contact.title)
+                          setEditLocation(contact.location)
+                          setEditTags((contact.tags || []).join(', '))
+                          setEditChannels(contact.channels || '')
+                          setShowEditContactModal(true)
+                        }}
+                      >
+                        Edit details
+                      </button>
                       <button
                         className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                         onClick={async () => {
@@ -1195,6 +1253,107 @@ export default function RecipientsPage() {
                 }}
               >
                 Create form
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showEditContactModal && editContact && (
+        <Modal onClose={() => setShowEditContactModal(false)}>
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Edit contact</p>
+                <p className="text-sm text-muted-foreground">Update fields, tags, and channels.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowEditContactModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Name</Label>
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Email</Label>
+                <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Phone</Label>
+                <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Title</Label>
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Location</Label>
+                <Input value={editLocation} onChange={(e) => setEditLocation(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Tags (comma separated)</Label>
+                <Input value={editTags} onChange={(e) => setEditTags(e.target.value)} />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <Label>Channels (comma or + separated)</Label>
+                <Input value={editChannels} onChange={(e) => setEditChannels(e.target.value)} placeholder="Email, SMS" />
+              </div>
+            </div>
+            {contactsError && <p className="text-xs text-red-600">{contactsError}</p>}
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowEditContactModal(false)}>Cancel</Button>
+              <Button
+                onClick={async () => {
+                  if (!currentOrgId) {
+                    setContactsError('No organization context; please sign in again.')
+                    return
+                  }
+                  const updatedTags = editTags.split(',').map((t) => t.trim()).filter(Boolean)
+                  const updatedChannels = editChannels
+                    .split(/[,+]/)
+                    .map((c) => c.trim())
+                    .filter(Boolean)
+                  setSavingContactId(editContact.id)
+                  const { error } = await supabase
+                    .from('recipient_contacts')
+                    .update({
+                      full_name: editName,
+                      email: editEmail,
+                      phone: editPhone,
+                      title: editTitle,
+                      location: editLocation,
+                      tags: updatedTags,
+                      channels: updatedChannels.length ? updatedChannels : ['Email'],
+                    })
+                    .eq('id', editContact.id)
+                    .eq('organization_id', currentOrgId)
+                  setSavingContactId(null)
+                  if (error) {
+                    setContactsError(error.message || 'Failed to save contact')
+                    return
+                  }
+                  setContacts((prev) =>
+                    prev.map((c) =>
+                      c.id === editContact.id
+                        ? {
+                            ...c,
+                            name: editName,
+                            email: editEmail,
+                            phone: editPhone,
+                            title: editTitle,
+                            location: editLocation,
+                            tags: updatedTags,
+                            channels: updatedChannels.join(' + '),
+                          }
+                        : c
+                    )
+                  )
+                  setShowEditContactModal(false)
+                }}
+              >
+                {savingContactId === editContact.id ? 'Saving…' : 'Save'}
               </Button>
             </div>
           </div>
