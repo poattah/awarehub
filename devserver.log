@@ -801,3 +801,7 @@ Import trace for requested module:
  ✓ Compiled /templates in 348ms (502 modules)
  ○ Compiling /campaigns/new ...
  ✓ Compiled /campaigns/new in 567ms (481 modules)
+ ✓ Compiled in 1599ms (627 modules)
+ ✓ Compiled /dashboard in 373ms (482 modules)
+ ✓ Compiled in 717ms (1104 modules)
+ ✓ Compiled /dashboard in 140ms (482 modules)
