@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import { logAnalyticsEvent } from '@/lib/analytics'
+import { loadAndApplyBrandForOrg } from '@/lib/brand'
 
 type FormRecord = {
   id: string
@@ -61,6 +62,9 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
         setError('Form not found')
       } else {
         setForm(data as FormRecord)
+        if ((data as any).organization_id) {
+          loadAndApplyBrandForOrg((data as any).organization_id as string)
+        }
       }
       setLoading(false)
     }

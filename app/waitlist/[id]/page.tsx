@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { Space_Grotesk, Manrope } from 'next/font/google'
 import { Loader2, Sparkles } from 'lucide-react'
 import { logAnalyticsEvent } from '@/lib/analytics'
+import { loadAndApplyBrandForOrg } from '@/lib/brand'
 
 const display = Space_Grotesk({ subsets: ['latin'], weight: ['500', '600', '700'] })
 const body = Manrope({ subsets: ['latin'], weight: ['400', '500', '600'] })
@@ -95,6 +96,9 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
           initial[f.key] = ''
         })
         setValues(initial)
+        if ((data as any).organization_id) {
+          loadAndApplyBrandForOrg((data as any).organization_id as string)
+        }
       }
       setLoading(false)
     }
