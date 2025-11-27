@@ -181,3 +181,85 @@
  ✓ Compiled in 0ms (394 modules)
  ✓ Compiled in 789ms (874 modules)
  ✓ Compiled in 561ms (874 modules)
+ ✓ Compiled in 913ms (874 modules)
+ ✓ Compiled in 610ms (860 modules)
+ ✓ Compiled in 637ms (874 modules)
+ ✓ Compiled /growth in 278ms (866 modules)
+ ✓ Compiled /campaigns in 268ms (394 modules)
+ ✓ Compiled /templates in 302ms (412 modules)
+ ✓ Compiled in 857ms (876 modules)
+ ✓ Compiled in 852ms (876 modules)
+ ✓ Compiled in 622ms (876 modules)
+ ✓ Compiled in 964ms (860 modules)
+ ✓ Compiled in 550ms (860 modules)
+ ○ Compiling /growth ...
+ ⨯ ./app/growth/page.tsx:3:0
+Module not found: Can't resolve '../recipients/page'
+[0m [90m 1 |[39m [32m"use client"[39m[0m
+[0m [90m 2 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m [33mRecipientsPage[39m [36mfrom[39m [32m'../recipients/page'[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [36mexport[39m [36mdefault[39m [36mfunction[39m [33mGrowthPage[39m() {[0m
+[0m [90m 6 |[39m   [36mreturn[39m [33m<[39m[33mRecipientsPage[39m [33m/[39m[33m>[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./app/growth/page.tsx:3:0
+Module not found: Can't resolve '../recipients/page'
+[0m [90m 1 |[39m [32m"use client"[39m[0m
+[0m [90m 2 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m [33mRecipientsPage[39m [36mfrom[39m [32m'../recipients/page'[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [36mexport[39m [36mdefault[39m [36mfunction[39m [33mGrowthPage[39m() {[0m
+[0m [90m 6 |[39m   [36mreturn[39m [33m<[39m[33mRecipientsPage[39m [33m/[39m[33m>[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./app/growth/page.tsx:3:0
+Module not found: Can't resolve '../recipients/page'
+[0m [90m 1 |[39m [32m"use client"[39m[0m
+[0m [90m 2 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m [33mRecipientsPage[39m [36mfrom[39m [32m'../recipients/page'[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [36mexport[39m [36mdefault[39m [36mfunction[39m [33mGrowthPage[39m() {[0m
+[0m [90m 6 |[39m   [36mreturn[39m [33m<[39m[33mRecipientsPage[39m [33m/[39m[33m>[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+ ✓ Compiled /_error in 909ms (1034 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 800ms (1038 modules)
+ ✓ Compiled in 785ms (1038 modules)
+ ✓ Compiled /campaigns in 371ms (429 modules)
+ ✓ Compiled in 1360ms (1018 modules)
+ ✓ Compiled /not-found in 315ms (1023 modules)
+ ✓ Compiled in 823ms (1023 modules)
+ ✓ Compiled /growth in 334ms (1029 modules)
+ ✓ Compiled /campaigns in 254ms (422 modules)
+ ✓ Compiled /calendar in 254ms (478 modules)
+ ✓ Compiled /dashboard in 79ms (483 modules)
+ ✓ Compiled /templates in 291ms (501 modules)
+ ✓ Compiled /brand in 183ms (509 modules)
+ ✓ Compiled in 799ms (1051 modules)
+ ✓ Compiled in 532ms (1051 modules)
+ ✓ Compiled in 818ms (1051 modules)
+ ✓ Compiled /growth in 212ms (436 modules)
+ ✓ Compiled /campaigns in 310ms (446 modules)
+ ✓ Compiled /waitlist/builder/[id] in 337ms (445 modules)
+ ✓ Compiled /forms/builder/[id] in 197ms (452 modules)
+ ✓ Compiled / in 335ms (431 modules)
+ ✓ Compiled /dashboard in 92ms (436 modules)
+ ✓ Compiled /auth/login in 102ms (440 modules)
+ ✓ Compiled /api/auth/ensure-profile in 286ms (534 modules)
+ ✓ Compiled /campaigns in 285ms (537 modules)
+ ✓ Compiled /templates in 207ms (544 modules)
+ ✓ Compiled /brand in 214ms (552 modules)
+ ✓ Compiled /analytics in 127ms (561 modules)

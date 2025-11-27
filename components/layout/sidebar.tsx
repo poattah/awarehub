@@ -13,6 +13,7 @@ import {
   Settings,
   Plug2,
   Users2,
+  TrendingUp,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
   { name: 'Recipients', href: '/recipients', icon: Users2 },
+  { name: 'Growth', href: '/growth', icon: TrendingUp },
   { name: 'Templates', href: '/templates', icon: Layout },
   { name: 'Brand Kit', href: '/brand', icon: Palette },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },

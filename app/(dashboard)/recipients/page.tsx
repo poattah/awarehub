@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -146,8 +146,12 @@ const contactsByList: Record<number, Contact[]> = {
 
 export default function RecipientsPage() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const isGrowthOnly = pathname?.startsWith('/growth')
+  const defaultTab = isGrowthOnly || searchParams.get('tab') === 'growth' ? 'growth' : 'lists'
   const [query, setQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'lists' | 'growth'>('lists')
+  const [activeTab, setActiveTab] = useState<'lists' | 'growth'>(defaultTab)
   const [viewMode, setViewMode] = useState<'lists' | 'contacts'>('lists')
   const [selectedListId, setSelectedListId] = useState<string | number | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -231,6 +235,9 @@ export default function RecipientsPage() {
   ]
 
   useEffect(() => {
+    if (isGrowthOnly) {
+      setActiveTab('growth')
+    }
     const handleClickAway = (event: MouseEvent) => {
       if (!openMenuId) return
       const target = event.target as Node
@@ -381,9 +388,13 @@ export default function RecipientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Recipients</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {isGrowthOnly ? 'Growth tools' : 'Recipients'}
+          </h1>
           <p className="text-muted-foreground">
-            Build lists and smart segments to target awareness campaigns across channels.
+            {isGrowthOnly
+              ? 'Create signup forms and waitlists to capture demand.'
+              : 'Build lists and smart segments to target awareness campaigns across channels.'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -399,24 +410,18 @@ export default function RecipientsPage() {
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-card shadow-soft-lg overflow-visible">
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/40 px-4 py-3">
-          <button
-            onClick={() => setActiveTab('lists')}
-            className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
-              activeTab === 'lists' ? 'bg-primary text-primary-foreground shadow-soft' : 'bg-white text-foreground'
-            }`}
-          >
-            Lists & Segments
-          </button>
-          <button
-            onClick={() => setActiveTab('growth')}
-            className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
-              activeTab === 'growth' ? 'bg-primary text-primary-foreground shadow-soft' : 'bg-white text-foreground'
-            }`}
-          >
-            Growth tools
-          </button>
-        </div>
+        {!isGrowthOnly && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/40 px-4 py-3">
+            <button
+              onClick={() => setActiveTab('lists')}
+              className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
+                activeTab === 'lists' ? 'bg-primary text-primary-foreground shadow-soft' : 'bg-white text-foreground'
+              }`}
+            >
+              Lists & Segments
+            </button>
+          </div>
+        )}
 
         {activeTab === 'lists' && viewMode === 'lists' ? (
           <div className="p-4 space-y-4">
@@ -638,7 +643,7 @@ export default function RecipientsPage() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : isGrowthOnly ? (
       <div className="p-4 space-y-4">
         <Card className="border-border/60 shadow-soft-lg">
           <div className="grid gap-4 md:grid-cols-3">
@@ -775,8 +780,8 @@ export default function RecipientsPage() {
             {waitlistStatus && <p className="text-xs text-muted-foreground">{waitlistStatus}</p>}
           </div>
         </div>
-      </div>
-        )}
+        </div>
+        ) : null}
       </div>
 
       <Card className="border-border/60 shadow-soft-lg">
