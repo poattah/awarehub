@@ -189,6 +189,7 @@ export default function RecipientsPage() {
   const triggerRefs = useRef<Record<string | number, HTMLButtonElement | null>>({})
   const [signupForms, setSignupForms] = useState<any[]>([])
   const [waitlistForms, setWaitlistForms] = useState<any[]>([])
+  const [openFormMenuId, setOpenFormMenuId] = useState<string | null>(null)
   const [signupLoading, setSignupLoading] = useState(false)
   const [signupError, setSignupError] = useState<string | null>(null)
   const [showSignupModal, setShowSignupModal] = useState(false)
@@ -716,7 +717,7 @@ export default function RecipientsPage() {
                   : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
               const formUrl = `${baseUrl}/forms/${form.id}`
               return (
-                <div key={form.id} className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between">
+                <div key={form.id} className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between relative">
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{form.name}</p>
                     <p className="text-[11px] text-muted-foreground truncate">
@@ -741,6 +742,38 @@ export default function RecipientsPage() {
                       Copy link
                     </Button>
                     <Link href={`/forms/${form.id}`} target="_blank"><Button size="sm" variant="ghost">View</Button></Link>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9"
+                      aria-label="Manage signup form"
+                      onClick={() => setOpenFormMenuId(openFormMenuId === form.id ? null : form.id)}
+                    >
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                    {openFormMenuId === form.id && (
+                      <div className="absolute right-3 top-12 z-20 w-48 rounded-xl border border-border/70 bg-white shadow-soft-lg p-1">
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60"
+                          onClick={() => {
+                            setOpenFormMenuId(null)
+                            router.push(`/forms/builder/${form.id}`)
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60 text-red-600"
+                          onClick={() => {
+                            setOpenFormMenuId(null)
+                            supabase.from('signup_forms').delete().eq('id', form.id)
+                            setSignupForms((prev) => prev.filter((f) => f.id !== form.id))
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -768,7 +801,7 @@ export default function RecipientsPage() {
                   : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
               const waitlistUrl = `${baseUrl}/waitlist/${form.id}`
               return (
-                <div key={form.id} className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between">
+                <div key={form.id} className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between relative">
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{form.name}</p>
                     <p className="text-[11px] text-muted-foreground truncate">
@@ -793,6 +826,38 @@ export default function RecipientsPage() {
                       Copy link
                     </Button>
                     <Link href={`/waitlist/${form.id}`} target="_blank"><Button size="sm" variant="ghost">View</Button></Link>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9"
+                      aria-label="Manage waitlist"
+                      onClick={() => setOpenFormMenuId(openFormMenuId === form.id ? null : form.id)}
+                    >
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                    {openFormMenuId === form.id && (
+                      <div className="absolute right-3 top-12 z-20 w-48 rounded-xl border border-border/70 bg-white shadow-soft-lg p-1">
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60"
+                          onClick={() => {
+                            setOpenFormMenuId(null)
+                            router.push(`/waitlist/builder/${form.id}`)
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60 text-red-600"
+                          onClick={() => {
+                            setOpenFormMenuId(null)
+                            supabase.from('signup_forms').delete().eq('id', form.id)
+                            setWaitlistForms((prev) => prev.filter((f) => f.id !== form.id))
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
