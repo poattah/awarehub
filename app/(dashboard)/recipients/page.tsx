@@ -640,126 +640,99 @@ export default function RecipientsPage() {
           </div>
         ) : (
       <div className="p-4 space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <GrowthCard
-            title="Create signup form"
-            description="Capture new subscribers with branded forms and consent."
-            cta="Create"
-            onClick={() => setShowSignupModal(true)}
-          />
-          <GrowthCard
-            title="Create waitlist"
-            description="Launch a branded waitlist hero with email capture and sharing."
-            cta="Launch"
-            onClick={() => setShowWaitlistModal(true)}
-          />
-          <GrowthCard
-            title="Preference pages"
-            description="Let people tailor topics: wellbeing, DEI, safety, compliance."
-            cta="Customize"
-              />
-              <GrowthCard
-                title="Import directory"
-                description="Sync HRIS or CSV to keep lists fresh."
-                cta="Connect"
-              />
-          <GrowthCard
-            title="Invite champions"
-            description="Add campaign champions as reviewers before launch."
-            cta="Add champions"
-          />
-        </div>
+        <Card className="border-border/60 shadow-soft-lg">
+          <div className="grid gap-4 md:grid-cols-3">
+            <GrowthCard
+              title="Create signup form"
+              description="Capture new subscribers with branded forms and consent."
+              cta="Create"
+              onClick={() => setShowSignupModal(true)}
+            />
+            <GrowthCard
+              title="Create waitlist"
+              description="Launch a branded waitlist hero with email capture and sharing."
+              cta="Launch"
+              onClick={() => setShowWaitlistModal(true)}
+            />
+            <GrowthCard
+              title="Import directory"
+              description="Sync HRIS or CSV to keep lists fresh."
+              cta="Connect"
+            />
+            <GrowthCard
+              title="Preference pages"
+              description="Let people tailor topics: wellbeing, DEI, safety, compliance."
+              cta="Customize"
+            />
+            <GrowthCard
+              title="Invite champions"
+              description="Add campaign champions as reviewers before launch."
+              cta="Add champions"
+            />
+          </div>
+        </Card>
         <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-soft-lg">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div>
               <p className="font-semibold">Signup forms</p>
-              <p className="text-sm text-muted-foreground">
-                Embed these forms or share the link to collect subscribers into a list.
-              </p>
+              <p className="text-sm text-muted-foreground">Share or embed to collect subscribers into a list.</p>
             </div>
             {signupLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
           </div>
           {signupError && <p className="text-xs text-red-600 mt-2">{signupError}</p>}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
             {signupForms.map((form) => {
               const baseUrl =
                 typeof window !== 'undefined'
                   ? window.location.origin
                   : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
               const formUrl = `${baseUrl}/forms/${form.id}`
-              const waitlistUrl = `${baseUrl}/waitlist/${form.id}`
               return (
-                <Card key={form.id} className="border-border/60 p-3 shadow-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="font-semibold">{form.name}</p>
-                      <p className="text-xs text-muted-foreground">{form.description || 'No description'}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Link href={`/forms/builder/${form.id}`}>
-                        <Button size="sm" variant="outline">Open builder</Button>
-                      </Link>
-                      <Link href={`/waitlist/${form.id}`} target="_blank">
-                        <Button size="sm" variant="outline">View waitlist</Button>
-                      </Link>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(formUrl)
-                            setSignupStatus('Link copied')
-                            setTimeout(() => setSignupStatus(null), 1500)
-                          } catch {
-                            setSignupStatus('Copy failed')
-                          }
-                        }}
-                      >
-                        Copy link
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(waitlistUrl)
-                            setSignupStatus('Waitlist link copied')
-                            setTimeout(() => setSignupStatus(null), 1500)
-                          } catch {
-                            setSignupStatus('Copy failed')
-                          }
-                        }}
-                      >
-                        Copy waitlist
-                      </Button>
-                    </div>
+                <div key={form.id} className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{form.name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {form.description || 'No description'} • Target list: {listSource.find((l) => String(l.id) === String(form.target_list_id))?.name || 'None'}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-2">
-                    Target list: {listSource.find((l) => String(l.id) === String(form.target_list_id))?.name || 'None'}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">Form URL: {formUrl}</p>
-                  <p className="text-[11px] text-muted-foreground">Waitlist URL: {waitlistUrl}</p>
-                </Card>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/forms/builder/${form.id}`}><Button size="sm" variant="outline">Builder</Button></Link>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(formUrl)
+                          setSignupStatus('Link copied')
+                          setTimeout(() => setSignupStatus(null), 1200)
+                        } catch {
+                          setSignupStatus('Copy failed')
+                        }
+                      }}
+                    >
+                      Copy link
+                    </Button>
+                    <Link href={`/forms/${form.id}`} target="_blank"><Button size="sm" variant="ghost">View</Button></Link>
+                  </div>
+                </div>
               )
             })}
             {!signupForms.length && !signupLoading && (
-              <p className="text-sm text-muted-foreground col-span-2">No signup forms yet. Create one to get started.</p>
+              <p className="text-sm text-muted-foreground">No signup forms yet. Create one to get started.</p>
             )}
+            {signupStatus && <p className="text-xs text-muted-foreground">{signupStatus}</p>}
           </div>
-          {signupStatus && <p className="text-xs text-muted-foreground mt-2">{signupStatus}</p>}
         </div>
         <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-soft-lg">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div>
               <p className="font-semibold">Waitlists</p>
-              <p className="text-sm text-muted-foreground">
-                Share a launch-ready hero page to collect early-access interest.
-              </p>
+              <p className="text-sm text-muted-foreground">Share a launch-ready hero page to collect early-access interest.</p>
             </div>
             {signupLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
           </div>
           {signupError && <p className="text-xs text-red-600 mt-2">{signupError}</p>}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
             {waitlistForms.map((form) => {
               const baseUrl =
                 typeof window !== 'undefined'
@@ -767,48 +740,40 @@ export default function RecipientsPage() {
                   : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
               const waitlistUrl = `${baseUrl}/waitlist/${form.id}`
               return (
-                <Card key={form.id} className="border-border/60 p-3 shadow-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="font-semibold">{form.name}</p>
-                      <p className="text-xs text-muted-foreground">{form.description || 'No description'}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Link href={`/forms/builder/${form.id}`}>
-                        <Button size="sm" variant="outline">Open builder</Button>
-                      </Link>
-                      <Link href={`/waitlist/${form.id}`} target="_blank">
-                        <Button size="sm" variant="outline">View</Button>
-                      </Link>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(waitlistUrl)
-                            setWaitlistStatus('Waitlist link copied')
-                            setTimeout(() => setWaitlistStatus(null), 1500)
-                          } catch {
-                            setWaitlistStatus('Copy failed')
-                          }
-                        }}
-                      >
-                        Copy link
-                      </Button>
-                    </div>
+                <div key={form.id} className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{form.name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {form.description || 'No description'} • Target list: {listSource.find((l) => String(l.id) === String(form.target_list_id))?.name || 'None'}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-2">
-                    Target list: {listSource.find((l) => String(l.id) === String(form.target_list_id))?.name || 'None'}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">Waitlist URL: {waitlistUrl}</p>
-                </Card>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/waitlist/builder/${form.id}`}><Button size="sm" variant="outline">Builder</Button></Link>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(waitlistUrl)
+                          setWaitlistStatus('Link copied')
+                          setTimeout(() => setWaitlistStatus(null), 1200)
+                        } catch {
+                          setWaitlistStatus('Copy failed')
+                        }
+                      }}
+                    >
+                      Copy link
+                    </Button>
+                    <Link href={`/waitlist/${form.id}`} target="_blank"><Button size="sm" variant="ghost">View</Button></Link>
+                  </div>
+                </div>
               )
             })}
             {!waitlistForms.length && !signupLoading && (
-              <p className="text-sm text-muted-foreground col-span-2">No waitlists yet. Create one to get started.</p>
+              <p className="text-sm text-muted-foreground">No waitlists yet. Create one to get started.</p>
             )}
+            {waitlistStatus && <p className="text-xs text-muted-foreground">{waitlistStatus}</p>}
           </div>
-          {waitlistStatus && <p className="text-xs text-muted-foreground mt-2">{waitlistStatus}</p>}
         </div>
       </div>
         )}
@@ -1138,7 +1103,7 @@ export default function RecipientsPage() {
                     setWaitlistStatus(null)
                     return
                   }
-                  router.push(`/waitlist/${data.id}`)
+                  router.push(`/waitlist/builder/${data.id}`)
                   setWaitlistForms((prev) => [data, ...prev])
                   setWaitlistName('')
                   setWaitlistDescription('')
