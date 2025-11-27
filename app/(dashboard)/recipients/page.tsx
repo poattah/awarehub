@@ -53,6 +53,68 @@ type Contact = {
   metadata?: Record<string, string>
 }
 
+const waitlistTemplates = {
+  glow: {
+    name: 'Gradient glow',
+    description: 'Dark hero with gradients and pill inputs',
+    settings: {
+      theme: 'waitlist_glow',
+      background: {
+        mode: 'gradient',
+        from: '#0b1224',
+        to: '#0a0f1a',
+        accents: ['rgba(99,102,241,0.3)', 'rgba(236,72,153,0.25)'],
+      },
+      input_style: 'pill',
+      button_style: 'gradient',
+      vignette: true,
+    },
+  },
+  light: {
+    name: 'Light airy',
+    description: 'Soft white card with subtle shadow',
+    settings: {
+      theme: 'waitlist_light',
+      background: {
+        mode: 'solid',
+        color: '#f8fafc',
+      },
+      input_style: 'rounded',
+      button_style: 'solid',
+      vignette: false,
+    },
+  },
+  mono: {
+    name: 'Monochrome',
+    description: 'High-contrast black/white with grid texture',
+    settings: {
+      theme: 'waitlist_mono',
+      background: {
+        mode: 'texture',
+        color: '#0f172a',
+        noise: 0.2,
+      },
+      input_style: 'pill',
+      button_style: 'outline',
+      vignette: true,
+    },
+  },
+  photo: {
+    name: 'Photo overlay',
+    description: 'Hero photo with blur/dim overlay',
+    settings: {
+      theme: 'waitlist_photo',
+      background: {
+        mode: 'photo',
+        dim: 0.5,
+      },
+      input_style: 'pill',
+      button_style: 'solid',
+      vignette: true,
+    },
+  },
+}
+
 const lists: List[] = [
   { id: 1, name: 'All Employees', type: 'List', members: 4280, created: '2024-05-12', tags: ['Org-wide'] },
   { id: 2, name: 'Managers & Leads', type: 'Segment', members: 430, created: '2024-06-01', tags: ['People Leaders'] },
@@ -122,9 +184,11 @@ export default function RecipientsPage() {
   const menuRefs = useRef<Record<string | number, HTMLDivElement | null>>({})
   const triggerRefs = useRef<Record<string | number, HTMLButtonElement | null>>({})
   const [signupForms, setSignupForms] = useState<any[]>([])
+  const [waitlistForms, setWaitlistForms] = useState<any[]>([])
   const [signupLoading, setSignupLoading] = useState(false)
   const [signupError, setSignupError] = useState<string | null>(null)
   const [showSignupModal, setShowSignupModal] = useState(false)
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false)
   const [signupName, setSignupName] = useState('')
   const [signupDescription, setSignupDescription] = useState('')
   const [signupTargetList, setSignupTargetList] = useState<string>('')
@@ -132,6 +196,15 @@ export default function RecipientsPage() {
   const [signupAllowDuplicates, setSignupAllowDuplicates] = useState(false)
   const [signupConsentText, setSignupConsentText] = useState('I agree to receive updates from this organization.')
   const [signupStatus, setSignupStatus] = useState<string | null>(null)
+  const [waitlistName, setWaitlistName] = useState('')
+  const [waitlistDescription, setWaitlistDescription] = useState('')
+  const [waitlistTargetList, setWaitlistTargetList] = useState<string>('')
+  const [waitlistStatus, setWaitlistStatus] = useState<string | null>(null)
+  const [waitlistError, setWaitlistError] = useState<string | null>(null)
+  const [waitlistPreset, setWaitlistPreset] = useState<'glow' | 'light' | 'mono' | 'photo'>('glow')
+  const [waitlistHeadline, setWaitlistHeadline] = useState('Join the waitlist')
+  const [waitlistSubhead, setWaitlistSubhead] = useState('Be the first to know when we launch.')
+  const [waitlistCtaLabel, setWaitlistCtaLabel] = useState('Join waitlist')
   const baseSignupFields = [
     { key: 'email', label: 'Email', type: 'email', enabled: true, required: true },
   ]
@@ -230,13 +303,15 @@ export default function RecipientsPage() {
       setSignupError(null)
       const { data, error } = await supabase
         .from('signup_forms')
-        .select('id, name, description, target_list_id, success_config, created_at, fields')
+        .select('id, name, description, target_list_id, success_config, created_at, fields, kind')
         .order('created_at', { ascending: false })
         .limit(25)
       if (error) {
         setSignupError('Could not load signup forms')
       } else {
-        setSignupForms(data || [])
+        const forms = data || []
+        setSignupForms(forms.filter((f) => (f as any).kind !== 'waitlist'))
+        setWaitlistForms(forms.filter((f) => (f as any).kind === 'waitlist'))
       }
       setSignupLoading(false)
     }
@@ -573,6 +648,12 @@ export default function RecipientsPage() {
             onClick={() => setShowSignupModal(true)}
           />
           <GrowthCard
+            title="Create waitlist"
+            description="Launch a branded waitlist hero with email capture and sharing."
+            cta="Launch"
+            onClick={() => setShowWaitlistModal(true)}
+          />
+          <GrowthCard
             title="Preference pages"
             description="Let people tailor topics: wellbeing, DEI, safety, compliance."
             cta="Customize"
@@ -606,6 +687,7 @@ export default function RecipientsPage() {
                   ? window.location.origin
                   : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
               const formUrl = `${baseUrl}/forms/${form.id}`
+              const waitlistUrl = `${baseUrl}/waitlist/${form.id}`
               return (
                 <Card key={form.id} className="border-border/60 p-3 shadow-sm">
                   <div className="flex items-center justify-between gap-2">
@@ -616,6 +698,9 @@ export default function RecipientsPage() {
                     <div className="flex gap-2">
                       <Link href={`/forms/builder/${form.id}`}>
                         <Button size="sm" variant="outline">Open builder</Button>
+                      </Link>
+                      <Link href={`/waitlist/${form.id}`} target="_blank">
+                        <Button size="sm" variant="outline">View waitlist</Button>
                       </Link>
                       <Button
                         size="sm"
@@ -632,12 +717,28 @@ export default function RecipientsPage() {
                       >
                         Copy link
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(waitlistUrl)
+                            setSignupStatus('Waitlist link copied')
+                            setTimeout(() => setSignupStatus(null), 1500)
+                          } catch {
+                            setSignupStatus('Copy failed')
+                          }
+                        }}
+                      >
+                        Copy waitlist
+                      </Button>
                     </div>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-2">
                     Target list: {listSource.find((l) => String(l.id) === String(form.target_list_id))?.name || 'None'}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">URL: {formUrl}</p>
+                  <p className="text-[11px] text-muted-foreground">Form URL: {formUrl}</p>
+                  <p className="text-[11px] text-muted-foreground">Waitlist URL: {waitlistUrl}</p>
                 </Card>
               )
             })}
@@ -646,6 +747,68 @@ export default function RecipientsPage() {
             )}
           </div>
           {signupStatus && <p className="text-xs text-muted-foreground mt-2">{signupStatus}</p>}
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-soft-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">Waitlists</p>
+              <p className="text-sm text-muted-foreground">
+                Share a launch-ready hero page to collect early-access interest.
+              </p>
+            </div>
+            {signupLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
+          </div>
+          {signupError && <p className="text-xs text-red-600 mt-2">{signupError}</p>}
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {waitlistForms.map((form) => {
+              const baseUrl =
+                typeof window !== 'undefined'
+                  ? window.location.origin
+                  : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+              const waitlistUrl = `${baseUrl}/waitlist/${form.id}`
+              return (
+                <Card key={form.id} className="border-border/60 p-3 shadow-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">{form.name}</p>
+                      <p className="text-xs text-muted-foreground">{form.description || 'No description'}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link href={`/forms/builder/${form.id}`}>
+                        <Button size="sm" variant="outline">Open builder</Button>
+                      </Link>
+                      <Link href={`/waitlist/${form.id}`} target="_blank">
+                        <Button size="sm" variant="outline">View</Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(waitlistUrl)
+                            setWaitlistStatus('Waitlist link copied')
+                            setTimeout(() => setWaitlistStatus(null), 1500)
+                          } catch {
+                            setWaitlistStatus('Copy failed')
+                          }
+                        }}
+                      >
+                        Copy link
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Target list: {listSource.find((l) => String(l.id) === String(form.target_list_id))?.name || 'None'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">Waitlist URL: {waitlistUrl}</p>
+                </Card>
+              )
+            })}
+            {!waitlistForms.length && !signupLoading && (
+              <p className="text-sm text-muted-foreground col-span-2">No waitlists yet. Create one to get started.</p>
+            )}
+          </div>
+          {waitlistStatus && <p className="text-xs text-muted-foreground mt-2">{waitlistStatus}</p>}
         </div>
       </div>
         )}
@@ -821,6 +984,7 @@ export default function RecipientsPage() {
                     name: signupName.trim(),
                     description: signupDescription.trim(),
                     target_list_id: signupTargetList || null,
+                    kind: 'signup',
                     fields: baseSignupFields,
                     settings: {
                       double_opt_in: false,
@@ -835,7 +999,7 @@ export default function RecipientsPage() {
                   const { data, error } = await supabase
                     .from('signup_forms')
                     .insert(payload as any)
-                    .select('id, name, description, target_list_id, success_config, created_at')
+                    .select('id, name, description, target_list_id, success_config, created_at, kind')
                     .single()
                   if (error || !data) {
                     setSignupError(error?.message || 'Failed to create form')
@@ -855,6 +1019,140 @@ export default function RecipientsPage() {
                 }}
               >
                 Create form
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showWaitlistModal && (
+        <Modal onClose={() => setShowWaitlistModal(false)}>
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Create waitlist</p>
+                <p className="text-sm text-muted-foreground">Launch a landing hero to collect early access interest.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowWaitlistModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Name</Label>
+                <Input value={waitlistName} onChange={(e) => setWaitlistName(e.target.value)} placeholder="e.g., Product beta waitlist" />
+              </div>
+              <div className="space-y-1">
+                <Label>Description</Label>
+                <Textarea value={waitlistDescription} onChange={(e) => setWaitlistDescription(e.target.value)} rows={2} placeholder="Short blurb shown on the hero" />
+              </div>
+              <div className="space-y-2">
+                <Label>Template</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(Object.keys(waitlistTemplates) as (keyof typeof waitlistTemplates)[]).map((key) => {
+                    const tpl = waitlistTemplates[key]
+                    const active = waitlistPreset === key
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setWaitlistPreset(key)}
+                        className={`rounded-xl border px-3 py-2 text-left transition ${
+                          active ? 'border-primary bg-primary/10' : 'border-border/60 hover:border-primary/50'
+                        }`}
+                      >
+                        <p className="text-sm font-semibold">{tpl.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{tpl.description}</p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Headline</Label>
+                <Input value={waitlistHeadline} onChange={(e) => setWaitlistHeadline(e.target.value)} placeholder="Join the waitlist" />
+              </div>
+              <div className="space-y-1">
+                <Label>Subhead</Label>
+                <Textarea value={waitlistSubhead} onChange={(e) => setWaitlistSubhead(e.target.value)} rows={2} placeholder="Be the first to know when we launch." />
+              </div>
+              <div className="space-y-1">
+                <Label>CTA label</Label>
+                <Input value={waitlistCtaLabel} onChange={(e) => setWaitlistCtaLabel(e.target.value)} placeholder="Join waitlist" />
+              </div>
+              <div className="space-y-1">
+                <Label>Target list</Label>
+                <select
+                  value={waitlistTargetList}
+                  onChange={(e) => setWaitlistTargetList(e.target.value)}
+                  className="w-full rounded-xl border border-border/60 bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Select a list (optional)</option>
+                  {listSource.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              </div>
+              {waitlistError && <p className="text-xs text-red-600">{waitlistError}</p>}
+              {waitlistStatus && <p className="text-xs text-muted-foreground">{waitlistStatus}</p>}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setShowWaitlistModal(false)}>Cancel</Button>
+              <Button
+                onClick={async () => {
+                  if (!waitlistName.trim()) {
+                    setWaitlistError('Name is required')
+                    return
+                  }
+                  setWaitlistError(null)
+                  setWaitlistStatus('Saving...')
+                  const payload = {
+                    name: waitlistName.trim(),
+                    description: waitlistDescription.trim(),
+                    target_list_id: waitlistTargetList || null,
+                    kind: 'waitlist',
+                    fields: baseSignupFields,
+                    settings: {
+                      double_opt_in: false,
+                      allow_duplicates: false,
+                      waitlist: {
+                        template: waitlistPreset,
+                        theme: waitlistTemplates[waitlistPreset].settings,
+                        headline: waitlistHeadline.trim() || 'Join the waitlist',
+                        subhead: waitlistSubhead.trim() || 'Be the first to know when we launch.',
+                        cta_label: waitlistCtaLabel.trim() || 'Join waitlist',
+                      },
+                    },
+                    success_config: {
+                      message: 'You’re on the waitlist!',
+                      redirect_url: null,
+                    },
+                  }
+                  const { data, error } = await supabase
+                    .from('signup_forms')
+                    .insert(payload as any)
+                    .select('id, name, description, target_list_id, success_config, created_at, kind')
+                    .single()
+                  if (error || !data) {
+                    setWaitlistError(error?.message || 'Failed to create waitlist')
+                    setWaitlistStatus(null)
+                    return
+                  }
+                  router.push(`/waitlist/${data.id}`)
+                  setWaitlistForms((prev) => [data, ...prev])
+                  setWaitlistName('')
+                  setWaitlistDescription('')
+                  setWaitlistTargetList('')
+                  setWaitlistHeadline('Join the waitlist')
+                  setWaitlistSubhead('Be the first to know when we launch.')
+                  setWaitlistCtaLabel('Join waitlist')
+                  setWaitlistPreset('glow')
+                  setWaitlistStatus('Created!')
+                  setTimeout(() => setWaitlistStatus(null), 1200)
+                  setShowWaitlistModal(false)
+                }}
+              >
+                {waitlistStatus === 'Saving...' ? 'Saving...' : 'Create waitlist'}
               </Button>
             </div>
           </div>
