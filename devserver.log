@@ -122,3 +122,62 @@
  ✓ Compiled in 787ms (866 modules)
  ✓ Compiled in 739ms (866 modules)
  ✓ Compiled /not-found in 367ms (857 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 944ms (866 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 294ms (866 modules)
+ ⨯ app/forms/builder/[id]/page.tsx (158:27) @ waitlistConfig
+ ⨯ ReferenceError: waitlistConfig is not defined
+    at FormBuilderPage (./app/forms/builder/[id]/page.tsx:274:30)
+[0m [90m 156 |[39m[0m
+[0m [90m 157 |[39m   [36mconst[39m previewFields [33m=[39m useMemo(() [33m=>[39m ensureEmailFirst(fields)[33m.[39mfilter((f) [33m=>[39m f[33m.[39menabled)[33m,[39m [fields])[0m
+[0m[31m[1m>[22m[39m[90m 158 |[39m   [36mconst[39m selectedTemplate [33m=[39m waitlistConfig[33m.[39mtemplate [33m||[39m [32m'glow'[39m[0m
+[0m [90m     |[39m                           [31m[1m^[22m[39m[0m
+[0m [90m 159 |[39m[0m
+[0m [90m 160 |[39m   [36mif[39m (loading) {[0m
+[0m [90m 161 |[39m     [36mreturn[39m [33m<[39m[33mdiv[39m className[33m=[39m[32m"min-h-screen flex items-center justify-center text-muted-foreground"[39m[33m>[39m[33mLoading[39m builder…[33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 350ms (866 modules)
+ ⨯ app/forms/builder/[id]/page.tsx (158:27) @ waitlistConfig
+ ⨯ ReferenceError: waitlistConfig is not defined
+    at FormBuilderPage (./app/forms/builder/[id]/page.tsx:272:30)
+[0m [90m 156 |[39m[0m
+[0m [90m 157 |[39m   [36mconst[39m previewFields [33m=[39m useMemo(() [33m=>[39m ensureEmailFirst(fields)[33m.[39mfilter((f) [33m=>[39m f[33m.[39menabled)[33m,[39m [fields])[0m
+[0m[31m[1m>[22m[39m[90m 158 |[39m   [36mconst[39m selectedTemplate [33m=[39m waitlistConfig[33m.[39mtemplate [33m||[39m [32m'glow'[39m[0m
+[0m [90m     |[39m                           [31m[1m^[22m[39m[0m
+[0m [90m 159 |[39m[0m
+[0m [90m 160 |[39m   [36mif[39m (loading) {[0m
+[0m [90m 161 |[39m     [36mreturn[39m [33m<[39m[33mdiv[39m className[33m=[39m[32m"min-h-screen flex items-center justify-center text-muted-foreground"[39m[33m>[39m[33mLoading[39m builder…[33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+ ⨯ app/forms/builder/[id]/page.tsx (158:27) @ waitlistConfig
+ ⨯ ReferenceError: waitlistConfig is not defined
+    at FormBuilderPage (./app/forms/builder/[id]/page.tsx:272:30)
+[0m [90m 156 |[39m[0m
+[0m [90m 157 |[39m   [36mconst[39m previewFields [33m=[39m useMemo(() [33m=>[39m ensureEmailFirst(fields)[33m.[39mfilter((f) [33m=>[39m f[33m.[39menabled)[33m,[39m [fields])[0m
+[0m[31m[1m>[22m[39m[90m 158 |[39m   [36mconst[39m selectedTemplate [33m=[39m waitlistConfig[33m.[39mtemplate [33m||[39m [32m'glow'[39m[0m
+[0m [90m     |[39m                           [31m[1m^[22m[39m[0m
+[0m [90m 159 |[39m[0m
+[0m [90m 160 |[39m   [36mif[39m (loading) {[0m
+[0m [90m 161 |[39m     [36mreturn[39m [33m<[39m[33mdiv[39m className[33m=[39m[32m"min-h-screen flex items-center justify-center text-muted-foreground"[39m[33m>[39m[33mLoading[39m builder…[33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 489ms (866 modules)
+ ✓ Compiled in 1ms (374 modules)
+ ✓ Compiled in 1ms (374 modules)
+ ✓ Compiled in 0ms (374 modules)
+ ✓ Compiled /not-found in 276ms (857 modules)
+ ○ Compiling /waitlist/builder/[id] ...
+ ✓ Compiled /waitlist/builder/[id] in 986ms (860 modules)
+ ✓ Compiled in 746ms (874 modules)
+ ✓ Compiled in 408ms (874 modules)
+ ✓ Compiled in 284ms (874 modules)
+ ✓ Compiled /dashboard in 250ms (385 modules)
+ ✓ Compiled in 421ms (880 modules)
+ ✓ Compiled in 332ms (875 modules)
+ ✓ Compiled /campaigns in 74ms (390 modules)
+ ✓ Compiled /forms/builder/[id] in 114ms (395 modules)
+ ✓ Compiled in 493ms (888 modules)
+ ✓ Compiled in 0ms (394 modules)
+ ✓ Compiled in 0ms (394 modules)
+ ✓ Compiled in 0ms (394 modules)
+ ✓ Compiled in 0ms (394 modules)
+ ✓ Compiled in 789ms (874 modules)
+ ✓ Compiled in 561ms (874 modules)

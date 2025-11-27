@@ -27,6 +27,7 @@ type FormRecord = {
   description?: string | null
   fields?: FieldDef[]
   settings?: Record<string, any>
+  kind?: string | null
 }
 
 const waitlistTemplates = {
@@ -76,8 +77,8 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
   const [error, setError] = useState<string | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [settings, setSettings] = useState<Record<string, any>>({})
-
-  const waitlistConfig = settings.waitlist || {}
+  const [formKind, setFormKind] = useState<'signup' | 'waitlist'>('signup')
+  const waitlistConfig = (settings.waitlist as Record<string, any>) || {}
   const setWaitlistField = (key: string, value: string) => {
     setSettings((prev) => ({
       ...prev,
@@ -89,7 +90,7 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
     const load = async () => {
       const { data, error } = await supabase
         .from('signup_forms')
-        .select('id, name, description, fields, settings')
+        .select('id, name, description, fields, settings, kind')
         .eq('id', id)
         .maybeSingle()
       if (error || !data) {
@@ -97,6 +98,7 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
       } else {
         const fieldArray = Array.isArray(data.fields) ? (data.fields as FieldDef[]) : []
         setForm(data as FormRecord)
+        setFormKind(((data as any).kind as 'signup' | 'waitlist') || 'signup')
         setSettings((data as any).settings || {})
         setFields(fieldArray.length ? fieldArray : [palette[0]]) // ensure email exists
       }
@@ -152,9 +154,19 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
     setStatus('Saving...')
     setError(null)
     const payload = ensureEmailFirst(fields)
+    const nextSettings =
+      formKind === 'waitlist'
+        ? {
+            ...settings,
+            waitlist: {
+              ...waitlistConfig,
+              template: waitlistConfig.template || 'glow',
+            },
+          }
+        : settings
     const { error } = await supabase
       .from('signup_forms')
-      .update({ fields: payload, settings })
+      .update({ fields: payload, settings: nextSettings })
       .eq('id', id)
     setSaving(false)
     if (error) {
@@ -167,7 +179,7 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
   }
 
   const previewFields = useMemo(() => ensureEmailFirst(fields).filter((f) => f.enabled), [fields])
-  const selectedTemplate = waitlistConfig.template || 'glow'
+  const selectedTemplate = (waitlistConfig.template as string) || 'glow'
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading builder…</div>
@@ -185,12 +197,19 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
             Back
           </Button>
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Signup form builder</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+              {formKind === 'waitlist' ? 'Waitlist builder' : 'Signup form builder'}
+            </p>
             <h1 className="text-lg font-bold">{form.name}</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {status && <Badge variant="outline">{status}</Badge>}
+          {formKind === 'waitlist' && (
+            <Link href={`/waitlist/${id}`} target="_blank">
+              <Button variant="outline" size="sm">Preview</Button>
+            </Link>
+          )}
           <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 mr-1" />
             Save
@@ -349,58 +368,60 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
               </div>
             </div>
           </Card>
-          <Card className="border-border/60 p-3 shadow-soft-lg">
-            <p className="text-sm font-semibold mb-2">Waitlist hero</p>
-            <div className="space-y-2">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Template</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(Object.keys(waitlistTemplates) as (keyof typeof waitlistTemplates)[]).map((key) => {
-                    const tpl = waitlistTemplates[key]
-                    const active = selectedTemplate === key
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setWaitlistField('template', key)}
-                        className={`rounded-lg border px-3 py-2 text-left transition ${
-                          active ? 'border-primary bg-primary/10' : 'border-border/60 hover:border-primary/50'
-                        }`}
-                      >
-                        <p className="text-sm font-semibold">{tpl.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{tpl.description}</p>
-                      </button>
-                    )
-                  })}
+          {formKind === 'waitlist' && (
+            <Card className="border-border/60 p-3 shadow-soft-lg">
+              <p className="text-sm font-semibold mb-2">Waitlist hero</p>
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Template</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Object.keys(waitlistTemplates) as (keyof typeof waitlistTemplates)[]).map((key) => {
+                      const tpl = waitlistTemplates[key]
+                      const active = selectedTemplate === key
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setWaitlistField('template', key)}
+                          className={`rounded-lg border px-3 py-2 text-left transition ${
+                            active ? 'border-primary bg-primary/10' : 'border-border/60 hover:border-primary/50'
+                          }`}
+                        >
+                          <p className="text-sm font-semibold">{tpl.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{tpl.description}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Headline</label>
+                  <Input
+                    value={waitlistConfig.headline || ''}
+                    onChange={(e) => setWaitlistField('headline', e.target.value)}
+                    placeholder="Join the waitlist"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Subhead</label>
+                  <Textarea
+                    value={waitlistConfig.subhead || ''}
+                    onChange={(e) => setWaitlistField('subhead', e.target.value)}
+                    rows={2}
+                    placeholder="Be the first to know when we launch."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">CTA label</label>
+                  <Input
+                    value={waitlistConfig.cta_label || ''}
+                    onChange={(e) => setWaitlistField('cta_label', e.target.value)}
+                    placeholder="Join waitlist"
+                  />
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Headline</label>
-                <Input
-                  value={waitlistConfig.headline || ''}
-                  onChange={(e) => setWaitlistField('headline', e.target.value)}
-                  placeholder="Join the waitlist"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Subhead</label>
-                <Textarea
-                  value={waitlistConfig.subhead || ''}
-                  onChange={(e) => setWaitlistField('subhead', e.target.value)}
-                  rows={2}
-                  placeholder="Be the first to know when we launch."
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">CTA label</label>
-                <Input
-                  value={waitlistConfig.cta_label || ''}
-                  onChange={(e) => setWaitlistField('cta_label', e.target.value)}
-                  placeholder="Join waitlist"
-                />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          )}
           <Card className="border-border/60 p-4 shadow-soft-lg">
             <div className="flex items-center justify-between">
               <div>
