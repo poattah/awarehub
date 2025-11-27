@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   addMonths,
   eachDayOfInterval,
@@ -20,17 +20,38 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { supabase } from '@/lib/supabase'
 
 const currentYear = new Date().getFullYear()
 const toISO = (month: number, day: number) =>
   `${currentYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+const allowedCategories = [
+  'DEI',
+  'Heritage',
+  'Mental Health',
+  'Wellness',
+  'Sustainability',
+  'Compliance',
+  'Safety',
+  'Finance',
+  'Engagement',
+  'Corporate Events',
+  'Religious Events',
+  'National Events',
+  'Social Events',
+  'Casual Events',
+  'Custom Events',
+  'Fun',
+  'Other',
+] as const
 
 type CalendarEvent = {
   id: number
   title: string
   description: string
   date: string // ISO date
-  category: keyof typeof categoryStyles
+  category: (typeof allowedCategories)[number]
   timeRange: string
 }
 
@@ -43,7 +64,7 @@ type ObservanceSeed = {
   timeRange?: string
 }
 
-const categoryStyles = {
+const categoryStyles: Record<CalendarEvent['category'], string> = {
   'DEI': 'bg-pink-500/15 text-pink-700 border border-pink-200',
   'Heritage': 'bg-amber-500/15 text-amber-700 border border-amber-200',
   'Mental Health': 'bg-emerald-500/15 text-emerald-700 border border-emerald-200',
@@ -59,7 +80,9 @@ const categoryStyles = {
   'Social Events': 'bg-rose-500/15 text-rose-700 border border-rose-200',
   'Casual Events': 'bg-slate-500/15 text-slate-700 border border-slate-200',
   'Custom Events': 'bg-zinc-500/15 text-zinc-700 border border-zinc-200',
-} as const
+  'Fun': 'bg-yellow-500/15 text-yellow-700 border border-yellow-200',
+  'Other': 'bg-gray-500/15 text-gray-700 border border-gray-200',
+}
 
 const monthObservances: ObservanceSeed[] = [
   { title: 'National Mentoring Month', description: 'Programming to connect mentors and mentees across the org.', month: 1, category: 'Engagement' },
@@ -187,6 +210,8 @@ const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+  const [orgId, setOrgId] = useState<string | null>(null)
+  const [loadingRemote, setLoadingRemote] = useState(false)
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -217,17 +242,80 @@ export default function CalendarPage() {
     }, {})
   }, [allEvents, categoryFilter])
 
-  const handleAddEvent = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadOrg = async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData.user?.id
+      if (!userId) return
+      const { data } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', userId)
+        .maybeSingle()
+      if (data?.organization_id) setOrgId(data.organization_id as string)
+    }
+    loadOrg()
+  }, [])
+
+  useEffect(() => {
+    const loadRemoteEvents = async () => {
+      if (!orgId) return
+      setLoadingRemote(true)
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('id, title, description, category, start_date')
+        .eq('organization_id', orgId)
+        .order('start_date', { ascending: true })
+        .limit(200)
+      setLoadingRemote(false)
+      if (error || !data) return
+      const mapped: CalendarEvent[] = data.map((e: any) => {
+        const cat = allowedCategories.includes(e.category) ? e.category : 'Other'
+        return {
+          id: e.id,
+          title: e.title,
+          description: e.description || '',
+          date: e.start_date,
+          category: cat,
+          timeRange: 'All day',
+        }
+      })
+      setUserEvents(mapped)
+    }
+    loadRemoteEvents()
+  }, [orgId])
+
+  const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.title.trim()) return
+    if (!orgId) {
+      alert('No organization context; please sign in again.')
+      return
+    }
+
+    const safeCategory = allowedCategories.includes(form.category) ? form.category : 'Other'
 
     const newEvent: CalendarEvent = {
       id: Date.now(),
       title: form.title.trim(),
       description: form.description.trim() || 'User-added event',
       date: form.date,
-      category: form.category,
+      category: safeCategory,
       timeRange: form.timeRange || 'All day',
+    }
+
+    const { error } = await supabase
+      .from('calendar_events')
+      .insert({
+        title: newEvent.title,
+        description: newEvent.description,
+        category: safeCategory,
+        start_date: newEvent.date,
+        organization_id: orgId,
+      })
+    if (error) {
+      alert(error.message)
+      return
     }
 
     setUserEvents((prev) => [...prev, newEvent])
@@ -270,22 +358,18 @@ export default function CalendarPage() {
                 >
                   All categories
                 </button>
-                {Object.keys(categoryStyles)
-                  .filter((k) => !['DEI','Heritage','Mental Health','Wellness','Sustainability','Compliance','Safety','Finance','Engagement'].includes(k))
-                  .concat(['Corporate Events','Religious Events','National Events','Social Events','Casual Events','Custom Events'])
-                  .filter((v, idx, arr) => arr.indexOf(v) === idx)
-                  .map((cat) => (
-                    <button
-                      key={cat}
-                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm"
-                      onClick={() => {
-                        setCategoryFilter(cat)
-                        setCategoryMenuOpen(false)
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                {allowedCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm"
+                    onClick={() => {
+                      setCategoryFilter(cat)
+                      setCategoryMenuOpen(false)
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -422,7 +506,7 @@ export default function CalendarPage() {
                     value={form.category}
                     onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value as CalendarEvent['category'] }))}
                   >
-                    {Object.keys(categoryStyles).map((cat) => (
+                    {allowedCategories.map((cat) => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>

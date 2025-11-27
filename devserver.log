@@ -385,3 +385,419 @@ https://nextjs.org/docs/messages/module-not-found
  ✓ Compiled /campaigns in 226ms (450 modules)
  ✓ Compiled in 766ms (1077 modules)
  ✓ Compiled /integrations in 271ms (449 modules)
+ ✓ Compiled /dashboard in 314ms (444 modules)
+ ✓ Compiled /calendar in 316ms (500 modules)
+ ✓ Compiled /templates in 134ms (498 modules)
+ ✓ Compiled /brand in 330ms (506 modules)
+ ✓ Compiled /integrations in 201ms (512 modules)
+ ✓ Compiled /settings in 339ms (544 modules)
+ ✓ Compiled /api/settings/team in 387ms (648 modules)
+ ✓ Compiled /auth/login in 348ms (520 modules)
+ ✓ Compiled /api/auth/ensure-profile in 114ms (604 modules)
+ ✓ Compiled /recipients in 174ms (605 modules)
+ ✓ Compiled /growth in 112ms (609 modules)
+ ✓ Compiled in 583ms (627 modules)
+ ✓ Compiled /campaigns in 217ms (507 modules)
+ ✓ Compiled /templates in 362ms (525 modules)
+ ✓ Compiled /brand in 125ms (533 modules)
+ ✓ Compiled /analytics in 270ms (611 modules)
+ ✓ Compiled /api/auth/ensure-profile in 313ms (534 modules)
+ ✓ Compiled in 1182ms (1067 modules)
+ ✓ Compiled /calendar in 350ms (496 modules)
+ ✓ Compiled in 1061ms (1091 modules)
+ ✓ Compiled in 445ms (1091 modules)
+ ✓ Compiled in 563ms (613 modules)
+ ✓ Compiled in 633ms (627 modules)
+ ✓ Compiled in 678ms (627 modules)
+ ✓ Compiled in 546ms (627 modules)
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 603ms (549 modules)
+ ✓ Compiled /api/internal/bootstrap-recipients in 398ms (578 modules)
+ ✓ Compiled /settings in 366ms (610 modules)
+ ✓ Compiled /campaigns in 219ms (621 modules)
+ ✓ Compiled /forms/[id] in 485ms (556 modules)
+ ✓ Compiled /forms/builder/[id] in 366ms (562 modules)
+ ✓ Compiled /dashboard in 317ms (482 modules)
+ ✓ Compiled /campaigns/new in 380ms (476 modules)
+ ✓ Compiled in 960ms (1099 modules)
+ ✓ Compiled in 854ms (1099 modules)
+ ✓ Compiled in 685ms (1099 modules)
+ ⨯ ./app/(dashboard)/calendar/page.tsx
+Error: 
+  [31mx[0m the name `orgId` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:188:1]
+ [2m188[0m | export default function CalendarPage() {
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [31;1m         ^^|^^[0m
+     :            [31;1m`-- [31;1mprevious definition of `orgId` here[0m[0m
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [33;1m         ^^|^^[0m
+     :            [33;1m`-- [33;1m`orgId` redefined here[0m[0m
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+     `----
+
+  [31mx[0m the name `setOrgId` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:188:1]
+ [2m188[0m | export default function CalendarPage() {
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [31;1m                ^^^^|^^^[0m
+     :                     [31;1m`-- [31;1mprevious definition of `setOrgId` here[0m[0m
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [33;1m                ^^^^|^^^[0m
+     :                     [33;1m`-- [33;1m`setOrgId` redefined here[0m[0m
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+     `----
+
+  [31mx[0m the name `loadingRemote` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:189:1]
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [31;1m         ^^^^^^|^^^^^^[0m
+     :                [31;1m`-- [31;1mprevious definition of `loadingRemote` here[0m[0m
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [33;1m         ^^^^^^|^^^^^^[0m
+     :                [33;1m`-- [33;1m`loadingRemote` redefined here[0m[0m
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+ [2m197[0m |     description: '',
+     `----
+
+  [31mx[0m the name `setLoadingRemote` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:189:1]
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [31;1m                        ^^^^^^^^|^^^^^^^[0m
+     :                                 [31;1m`-- [31;1mprevious definition of `setLoadingRemote` here[0m[0m
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [33;1m                        ^^^^^^^^|^^^^^^^[0m
+     :                                 [33;1m`-- [33;1m`setLoadingRemote` redefined here[0m[0m
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+ [2m197[0m |     description: '',
+     `----
+
+Import trace for requested module:
+./app/(dashboard)/calendar/page.tsx
+ ○ Compiling /not-found ...
+ ⨯ ./app/(dashboard)/calendar/page.tsx
+Error: 
+  [31mx[0m the name `orgId` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:188:1]
+ [2m188[0m | export default function CalendarPage() {
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [31;1m         ^^|^^[0m
+     :            [31;1m`-- [31;1mprevious definition of `orgId` here[0m[0m
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [33;1m         ^^|^^[0m
+     :            [33;1m`-- [33;1m`orgId` redefined here[0m[0m
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+     `----
+
+  [31mx[0m the name `setOrgId` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:188:1]
+ [2m188[0m | export default function CalendarPage() {
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [31;1m                ^^^^|^^^[0m
+     :                     [31;1m`-- [31;1mprevious definition of `setOrgId` here[0m[0m
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [33;1m                ^^^^|^^^[0m
+     :                     [33;1m`-- [33;1m`setOrgId` redefined here[0m[0m
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+     `----
+
+  [31mx[0m the name `loadingRemote` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:189:1]
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [31;1m         ^^^^^^|^^^^^^[0m
+     :                [31;1m`-- [31;1mprevious definition of `loadingRemote` here[0m[0m
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [33;1m         ^^^^^^|^^^^^^[0m
+     :                [33;1m`-- [33;1m`loadingRemote` redefined here[0m[0m
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+ [2m197[0m |     description: '',
+     `----
+
+  [31mx[0m the name `setLoadingRemote` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:189:1]
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [31;1m                        ^^^^^^^^|^^^^^^^[0m
+     :                                 [31;1m`-- [31;1mprevious definition of `setLoadingRemote` here[0m[0m
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [33;1m                        ^^^^^^^^|^^^^^^^[0m
+     :                                 [33;1m`-- [33;1m`setLoadingRemote` redefined here[0m[0m
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+ [2m197[0m |     description: '',
+     `----
+
+Import trace for requested module:
+./app/(dashboard)/calendar/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./app/(dashboard)/calendar/page.tsx
+Error: 
+  [31mx[0m the name `orgId` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:188:1]
+ [2m188[0m | export default function CalendarPage() {
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [31;1m         ^^|^^[0m
+     :            [31;1m`-- [31;1mprevious definition of `orgId` here[0m[0m
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [33;1m         ^^|^^[0m
+     :            [33;1m`-- [33;1m`orgId` redefined here[0m[0m
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+     `----
+
+  [31mx[0m the name `setOrgId` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:188:1]
+ [2m188[0m | export default function CalendarPage() {
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [31;1m                ^^^^|^^^[0m
+     :                     [31;1m`-- [31;1mprevious definition of `setOrgId` here[0m[0m
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [33;1m                ^^^^|^^^[0m
+     :                     [33;1m`-- [33;1m`setOrgId` redefined here[0m[0m
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+     `----
+
+  [31mx[0m the name `loadingRemote` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:189:1]
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [31;1m         ^^^^^^|^^^^^^[0m
+     :                [31;1m`-- [31;1mprevious definition of `loadingRemote` here[0m[0m
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [33;1m         ^^^^^^|^^^^^^[0m
+     :                [33;1m`-- [33;1m`loadingRemote` redefined here[0m[0m
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+ [2m197[0m |     description: '',
+     `----
+
+  [31mx[0m the name `setLoadingRemote` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:189:1]
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [31;1m                        ^^^^^^^^|^^^^^^^[0m
+     :                                 [31;1m`-- [31;1mprevious definition of `setLoadingRemote` here[0m[0m
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [33;1m                        ^^^^^^^^|^^^^^^^[0m
+     :                                 [33;1m`-- [33;1m`setLoadingRemote` redefined here[0m[0m
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+ [2m197[0m |     description: '',
+     `----
+
+Import trace for requested module:
+./app/(dashboard)/calendar/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./app/(dashboard)/calendar/page.tsx
+Error: 
+  [31mx[0m the name `orgId` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:188:1]
+ [2m188[0m | export default function CalendarPage() {
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [31;1m         ^^|^^[0m
+     :            [31;1m`-- [31;1mprevious definition of `orgId` here[0m[0m
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [33;1m         ^^|^^[0m
+     :            [33;1m`-- [33;1m`orgId` redefined here[0m[0m
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+     `----
+
+  [31mx[0m the name `setOrgId` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:188:1]
+ [2m188[0m | export default function CalendarPage() {
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [31;1m                ^^^^|^^^[0m
+     :                     [31;1m`-- [31;1mprevious definition of `setOrgId` here[0m[0m
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+     : [33;1m                ^^^^|^^^[0m
+     :                     [33;1m`-- [33;1m`setOrgId` redefined here[0m[0m
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+     `----
+
+  [31mx[0m the name `loadingRemote` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:189:1]
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [31;1m         ^^^^^^|^^^^^^[0m
+     :                [31;1m`-- [31;1mprevious definition of `loadingRemote` here[0m[0m
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [33;1m         ^^^^^^|^^^^^^[0m
+     :                [33;1m`-- [33;1m`loadingRemote` redefined here[0m[0m
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+ [2m197[0m |     description: '',
+     `----
+
+  [31mx[0m the name `setLoadingRemote` is defined multiple times
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/calendar/page.tsx[0m:189:1]
+ [2m189[0m |   const [currentMonth, setCurrentMonth] = useState(new Date())
+ [2m190[0m |   const [userEvents, setUserEvents] = useState<CalendarEvent[]>([])
+ [2m191[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m192[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [31;1m                        ^^^^^^^^|^^^^^^^[0m
+     :                                 [31;1m`-- [31;1mprevious definition of `setLoadingRemote` here[0m[0m
+ [2m193[0m |   const [orgId, setOrgId] = useState<string | null>(null)
+ [2m194[0m |   const [loadingRemote, setLoadingRemote] = useState(false)
+     : [33;1m                        ^^^^^^^^|^^^^^^^[0m
+     :                                 [33;1m`-- [33;1m`setLoadingRemote` redefined here[0m[0m
+ [2m195[0m |   const [form, setForm] = useState({
+ [2m196[0m |     title: '',
+ [2m197[0m |     description: '',
+     `----
+
+Import trace for requested module:
+./app/(dashboard)/calendar/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled /not-found in 1563ms (1090 modules)
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at loadManifest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/load-manifest.js:35:27)
+    at DevServer.getNextFontManifest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/next-server.js:710:47)
+    at DevServer.findPageComponents (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/dev/next-dev-server.js:559:43)
+    at async DevServer.renderPageComponent (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/base-server.js:1844:24)
+    at async DevServer.renderToResponseImpl (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/base-server.js:1894:32)
+    at async DevServer.pipeImpl (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/base-server.js:911:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/next-server.js:271:17)
+    at async DevServer.handleRequestImpl (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/base-server.js:807:17)
+    at async /Users/princeowusuattah/awarehub/node_modules/next/dist/server/dev/next-dev-server.js:331:20
+    at async Span.traceAsyncFn (/Users/princeowusuattah/awarehub/node_modules/next/dist/trace/trace.js:151:20)
+    at async DevServer.handleRequest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/dev/next-dev-server.js:328:24)
+    at async invokeRender (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/lib/router-server.js:163:21)
+    at async handleRequest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/lib/router-server.js:342:24)
+    at async requestHandlerImpl (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/lib/router-server.js:366:13)
+    at async Server.requestListener (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/lib/start-server.js:140:13) {
+  page: '/forms/bacc6431-9522-4ccb-b316-c998cd5618f6'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at loadManifest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/load-manifest.js:35:27)
+    at DevServer.getNextFontManifest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/next-server.js:710:47)
+    at DevServer.findPageComponents (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/dev/next-dev-server.js:559:43)
+    at async DevServer.renderPageComponent (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/base-server.js:1844:24)
+    at async DevServer.renderToResponseImpl (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/base-server.js:1894:32)
+    at async DevServer.pipeImpl (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/base-server.js:911:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/next-server.js:271:17)
+    at async DevServer.handleRequestImpl (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/base-server.js:807:17)
+    at async /Users/princeowusuattah/awarehub/node_modules/next/dist/server/dev/next-dev-server.js:331:20
+    at async Span.traceAsyncFn (/Users/princeowusuattah/awarehub/node_modules/next/dist/trace/trace.js:151:20)
+    at async DevServer.handleRequest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/dev/next-dev-server.js:328:24)
+    at async invokeRender (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/lib/router-server.js:163:21)
+    at async handleRequest (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/lib/router-server.js:342:24)
+    at async requestHandlerImpl (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/lib/router-server.js:366:13)
+    at async Server.requestListener (/Users/princeowusuattah/awarehub/node_modules/next/dist/server/lib/start-server.js:140:13) {
+  page: '/forms/3eeb1567-7f07-425c-828f-0e4e067cddba'
+}
+ ○ Compiling /auth/login ...
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled /auth/login in 1379ms (1094 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled /campaigns in 418ms (481 modules)
+ ✓ Compiled /growth in 337ms (485 modules)
+ ✓ Compiled /templates in 269ms (503 modules)
+ ✓ Compiled /brand in 245ms (511 modules)
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 747ms (589 modules)
+ ✓ Compiled /dashboard in 420ms (594 modules)
+ ✓ Compiled in 1246ms (1092 modules)
+ ✓ Compiled in 571ms (1092 modules)
+ ✓ Compiled in 334ms (1092 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 729ms (1083 modules)
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 705ms (553 modules)
+ ✓ Compiled /templates in 149ms (564 modules)
+ ✓ Compiled /growth in 244ms (568 modules)
+ ✓ Compiled /api/auth/ensure-profile in 166ms (590 modules)
+ ✓ Compiled /forms/builder/[id] in 246ms (588 modules)
+ ○ Compiling /waitlist/[id] ...
+ ✓ Compiled /waitlist/[id] in 538ms (597 modules)
+ ✓ Compiled in 822ms (627 modules)
+ ✓ Compiled in 431ms (627 modules)
+ ✓ Compiled /campaigns in 306ms (485 modules)
+ ✓ Compiled /dashboard in 153ms (490 modules)
+ ✓ Compiled /templates in 348ms (502 modules)
+ ○ Compiling /campaigns/new ...
+ ✓ Compiled /campaigns/new in 567ms (481 modules)

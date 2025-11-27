@@ -11,8 +11,32 @@ export default function DashboardPage() {
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [orgId, setOrgId] = useState<string | null>(null)
 
   useEffect(() => {
+    const loadOrg = async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData.user?.id
+      if (!userId) {
+        setLoading(false)
+        return
+      }
+      const { data } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', userId)
+        .maybeSingle()
+      if (data?.organization_id) {
+        setOrgId(data.organization_id as string)
+      } else {
+        setLoading(false)
+      }
+    }
+    loadOrg()
+  }, [])
+
+  useEffect(() => {
+    if (!orgId) return
     let active = true
     const load = async () => {
       setLoading(true)
@@ -20,14 +44,16 @@ export default function DashboardPage() {
         supabase
           .from('campaigns')
           .select('id, name, status, start_at, metadata, updated_at')
+          .eq('organization_id', orgId)
           .order('updated_at', { ascending: false })
           .limit(10),
         supabase
           .from('calendar_events')
           .select('id, title, start_date, category')
+          .eq('organization_id', orgId)
           .gte('start_date', new Date().toISOString().slice(0, 10))
           .order('start_date', { ascending: true })
-          .limit(5),
+          .limit(10),
       ])
       if (!active) return
       setCampaigns(campaignRes.data || [])
@@ -38,7 +64,7 @@ export default function DashboardPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [orgId])
 
   const hasCampaigns = campaigns.length > 0
   const activeCount = campaigns.filter((c) => c.status === 'active').length
@@ -56,14 +82,19 @@ export default function DashboardPage() {
       }))
     : recentCampaigns
 
-  const upcoming = hasEvents
-    ? events.map((e) => ({
+  const now = new Date()
+  const upcoming = (() => {
+    const real = events
+      .filter((e) => (e.start_date ? new Date(e.start_date) >= now : false))
+      .map((e) => ({
         id: e.id,
         name: e.title,
         date: e.start_date ? new Date(e.start_date).toLocaleDateString() : 'Date TBC',
         category: e.category,
       }))
-    : upcomingEvents
+    const fallback = upcomingEvents.filter((e) => (e.date ? new Date(e.date) >= now : true))
+    return (real.length ? real : []).concat(fallback).slice(0, 6)
+  })()
 
   return (
     <div className="space-y-6">

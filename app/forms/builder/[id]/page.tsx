@@ -29,6 +29,7 @@ type FormRecord = {
   fields?: FieldDef[]
   settings?: Record<string, any>
   kind?: string | null
+  organization_id?: string | null
 }
 
 const waitlistTemplates = {
@@ -91,7 +92,7 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
     const load = async () => {
       const { data, error } = await supabase
         .from('signup_forms')
-        .select('id, name, description, fields, settings, kind')
+        .select('id, name, description, fields, settings, kind, organization_id')
         .eq('id', id)
         .maybeSingle()
       if (error || !data) {
@@ -178,6 +179,7 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
       logAnalyticsEvent({
         event_type: 'builder_save',
         form_id: id,
+        organization_id: form?.organization_id || null,
         metadata: { kind: formKind, fields_count: payload.length },
       })
       setTimeout(() => setStatus(null), 1500)

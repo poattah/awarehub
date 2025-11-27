@@ -72,6 +72,7 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
       logAnalyticsEvent({
         event_type: 'form_view',
         form_id: form.id,
+        organization_id: form.organization_id || null,
         metadata: { kind: 'signup' },
       })
     }
@@ -118,11 +119,12 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
     if (submissionError) {
       setError(submissionError.message)
       setSubmitting(false)
-      logAnalyticsEvent({
-        event_type: 'form_submit_error',
-        form_id: id,
-        metadata: { kind: 'signup', message: submissionError.message },
-      })
+    logAnalyticsEvent({
+      event_type: 'form_submit_error',
+      form_id: id,
+      organization_id: form?.organization_id || null,
+      metadata: { kind: 'signup', message: submissionError.message },
+    })
       return
     }
 
@@ -195,6 +197,7 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
     logAnalyticsEvent({
       event_type: 'form_submit',
       form_id: id,
+      organization_id: form?.organization_id || null,
       metadata: { kind: 'signup', target_list_id: form?.target_list_id },
     })
   }

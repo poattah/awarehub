@@ -944,6 +944,14 @@ export default function RecipientsPage() {
                     setListError('Name required')
                     return
                   }
+                  if (orgLoading) {
+                    setListError('Loading organization context, try again.')
+                    return
+                  }
+                  if (!currentOrgId) {
+                    setListError('No organization context; please sign in again.')
+                    return
+                  }
                   setSavingList(true)
                   setListError(null)
                   const { data, error } = await supabase
@@ -951,6 +959,7 @@ export default function RecipientsPage() {
                     .insert({
                       name: newListName.trim(),
                       type: newListType,
+                      organization_id: currentOrgId,
                       tags: newListTags ? newListTags.split(',').map((t) => t.trim()).filter(Boolean) : [],
                     })
                     .select('id, name, type, tags, member_count, created_at')
@@ -1458,6 +1467,14 @@ export default function RecipientsPage() {
                     setContactsError('First and last name required')
                     return
                   }
+                  if (orgLoading) {
+                    setContactsError('Loading organization context, try again.')
+                    return
+                  }
+                  if (!currentOrgId) {
+                    setContactsError('No organization context; please sign in again.')
+                    return
+                  }
                   const metadata: Record<string, string> = {
                     first_name: firstName.trim(),
                     last_name: lastName.trim(),
@@ -1478,6 +1495,7 @@ export default function RecipientsPage() {
                       tags: newContact.tags,
                       channels: ['Email'],
                       metadata,
+                      organization_id: currentOrgId,
                     })
                     .select('id, full_name, email, phone, title, location, tags, channels, metadata')
                     .single()
