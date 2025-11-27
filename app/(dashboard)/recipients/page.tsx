@@ -157,6 +157,7 @@ export default function RecipientsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [previewContact, setPreviewContact] = useState<Contact | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null)
+  const [contactMenuId, setContactMenuId] = useState<string | number | null>(null)
   const [remoteLists, setRemoteLists] = useState<List[]>(lists)
   const [listLoading, setListLoading] = useState(false)
   const [listError, setListError] = useState<string | null>(null)
@@ -171,6 +172,7 @@ export default function RecipientsPage() {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importTargetList, setImportTargetList] = useState<string | number | ''>('')
   const [importStatus, setImportStatus] = useState<string | null>(null)
+  const [lottieReady, setLottieReady] = useState(false)
   const [savingList, setSavingList] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
   const [newContact, setNewContact] = useState<Omit<Contact, 'id' | 'channels'>>({
@@ -212,6 +214,8 @@ export default function RecipientsPage() {
   const [waitlistHeadline, setWaitlistHeadline] = useState('Join the waitlist')
   const [waitlistSubhead, setWaitlistSubhead] = useState('Be the first to know when we launch.')
   const [waitlistCtaLabel, setWaitlistCtaLabel] = useState('Join waitlist')
+  const [savingContactId, setSavingContactId] = useState<string | number | null>(null)
+  const [deletingContactId, setDeletingContactId] = useState<string | number | null>(null)
   const baseSignupFields = [
     { key: 'email', label: 'Email', type: 'email', enabled: true, required: true },
   ]
@@ -259,16 +263,35 @@ export default function RecipientsPage() {
   }, [])
 
   useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (document.getElementById('dotlottie-wc-loader')) {
+      setLottieReady(true)
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'dotlottie-wc-loader'
+    script.type = 'module'
+    script.src = 'https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js'
+    script.onload = () => setLottieReady(true)
+    document.head.appendChild(script)
+  }, [])
+
+  useEffect(() => {
     if (isGrowthOnly) {
       setActiveTab('growth')
     }
     const handleClickAway = (event: MouseEvent) => {
-      if (!openMenuId) return
       const target = event.target as Node
-      const menuEl = menuRefs.current[openMenuId]
-      const triggerEl = triggerRefs.current[openMenuId]
-      if (menuEl?.contains(target) || triggerEl?.contains(target)) return
-      setOpenMenuId(null)
+      if (openMenuId) {
+        const menuEl = menuRefs.current[openMenuId]
+        const triggerEl = triggerRefs.current[openMenuId]
+        if (!(menuEl?.contains(target) || triggerEl?.contains(target))) {
+          setOpenMenuId(null)
+        }
+      }
+      if (contactMenuId) {
+        setContactMenuId(null)
+      }
     }
 
     document.addEventListener('mousedown', handleClickAway)
@@ -654,15 +677,92 @@ export default function RecipientsPage() {
                   }}
                   className="h-9"
                 />
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Save className="h-4 w-4 mr-1" />
-                    Save
-                  </Button>
+                <div className="flex items-center justify-end gap-2 relative">
                   <Button variant="outline" size="sm" onClick={() => setPreviewContact(contact)}>
                     <Eye className="h-4 w-4 mr-1" />
                     Preview
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setContactMenuId(contact.id === contactMenuId ? null : contact.id)
+                    }}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                  {contactMenuId === contact.id && (
+                    <div className="absolute right-0 top-10 z-20 w-44 rounded-lg border border-border/70 bg-card shadow-soft-lg">
+                      <button
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                        onClick={async () => {
+                          setContactMenuId(null)
+                          if (!currentOrgId) {
+                            setContactsError('No organization context; please sign in again.')
+                            return
+                          }
+                          setSavingContactId(contact.id)
+                          setContactsError(null)
+                          const { error } = await supabase
+                            .from('recipient_contacts')
+                            .update({
+                              full_name: contact.name,
+                              email: contact.email,
+                              phone: contact.phone,
+                              title: contact.title,
+                              location: contact.location,
+                            })
+                            .eq('id', contact.id)
+                            .eq('organization_id', currentOrgId || '')
+                          setSavingContactId(null)
+                          if (error) {
+                            setContactsError(error.message || 'Failed to save contact')
+                          }
+                        }}
+                      >
+                        {savingContactId === contact.id ? 'Saving…' : 'Save changes'}
+                      </button>
+                      <button
+                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                        onClick={async () => {
+                          setContactMenuId(null)
+                          if (!selectedListId) {
+                            setContactsError('Select a list first.')
+                            return
+                          }
+                          if (!currentOrgId) {
+                            setContactsError('No organization context; please sign in again.')
+                            return
+                          }
+                          setDeletingContactId(contact.id)
+                          setContactsError(null)
+                          await supabase
+                            .from('recipient_contact_memberships')
+                            .delete()
+                            .eq('contact_id', contact.id)
+                            .eq('list_id', selectedListId)
+                          const { error } = await supabase
+                            .from('recipient_contacts')
+                            .delete()
+                            .eq('id', contact.id)
+                            .eq('organization_id', currentOrgId || '')
+                          setDeletingContactId(null)
+                          if (error) {
+                            setContactsError(error.message || 'Failed to delete contact')
+                            return
+                          }
+                          const next = contacts.filter((c) => c.id !== contact.id)
+                          setContacts(next)
+                          if (selectedListId) {
+                            await refreshListCount(selectedListId)
+                          }
+                        }}
+                      >
+                        {deletingContactId === contact.id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -1274,7 +1374,22 @@ export default function RecipientsPage() {
                 <Label>CSV file</Label>
                 <Input type="file" accept=".csv,text/csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
               </div>
-              {importStatus && <p className="text-xs text-muted-foreground">{importStatus}</p>}
+              {importStatus && (
+                <div className="flex items-center gap-3">
+                  {lottieReady && /uploading|parsing|linking/i.test(importStatus) && (
+                    <div className="flex-shrink-0">
+                      {/* @ts-expect-error dotlottie web component */}
+                      <dotlottie-wc
+                        src="https://lottie.host/b905dcfb-2dfb-45a5-a4fd-236c0634436e/CGvwIy0IYy.lottie"
+                        style={{ width: '48px', height: '48px' }}
+                        autoplay
+                        loop
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground whitespace-pre-line">{importStatus}</p>
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setShowImportModal(false)}>Cancel</Button>
@@ -1282,6 +1397,14 @@ export default function RecipientsPage() {
                 onClick={async () => {
                   if (!importFile || !importTargetList) {
                     setImportStatus('Select a list and choose a CSV file.')
+                    return
+                  }
+                  if (orgLoading) {
+                    setImportStatus('Loading organization context, try again.')
+                    return
+                  }
+                  if (!currentOrgId) {
+                    setImportStatus('No organization context; please sign in again.')
                     return
                   }
                   setImportStatus('Parsing CSV...')
@@ -1322,6 +1445,7 @@ export default function RecipientsPage() {
                       tags: getByKeys(['tags']) ? getByKeys(['tags']).split('|').map((t) => t.trim()).filter(Boolean) : [],
                       channels: getByKeys(['channels']) ? getByKeys(['channels']).split('|').map((t) => t.trim()).filter(Boolean) : [],
                       metadata,
+                      organization_id: currentOrgId,
                     }
                   }).filter((row) => row.email)
 
@@ -1337,7 +1461,7 @@ export default function RecipientsPage() {
                     .select('id, email')
 
                   if (contactsErr || !insertedContacts?.length) {
-                    setImportStatus(contactsErr?.message || 'Failed to import contacts')
+                    setImportStatus(`Import failed: ${contactsErr?.message || 'unknown error'}`)
                     return
                   }
 
@@ -1345,17 +1469,19 @@ export default function RecipientsPage() {
                     list_id: importTargetList,
                     contact_id: c.id,
                   }))
+                  setImportStatus('Linking contacts to list...')
                   const { error: membershipErr } = await supabase
                     .from('recipient_contact_memberships')
                     .insert(memberships)
 
                   if (membershipErr) {
-                    setImportStatus(membershipErr.message || 'Failed to link contacts')
+                    setImportStatus(`Linking failed: ${membershipErr.message || 'unknown error'}`)
                     return
                   }
 
                   setImportStatus('Imported successfully.')
                   await refreshListCount(importTargetList)
+                  await fetchContacts(importTargetList)
                   fetchLists(true)
                   setTimeout(() => {
                     setShowImportModal(false)
@@ -1573,64 +1699,71 @@ function RecipientPreview({ contact, onClose }: { contact: Contact; onClose: () 
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div
-        className="w-full max-w-xl rounded-2xl border border-border/70 bg-card shadow-soft-lg overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
-          <div>
-            <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Recipient preview</p>
-            <h3 className="text-lg font-bold">{contact.name}</h3>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="p-5 space-y-3 text-sm">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" />
-            <div>
-              <p className="font-semibold">{contact.title}</p>
-              <p className="text-muted-foreground">{contact.location}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-primary" />
-            <span className="text-muted-foreground">{contact.email}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-primary" />
-            <span className="text-muted-foreground">{contact.phone}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary" />
-            <span className="text-muted-foreground">{contact.location}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-primary" />
-            <div className="flex flex-wrap gap-2">
-              {contact.tags.map((tag) => (
-                <Badge key={tag} variant="outline">{tag}</Badge>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" />
-            <span className="text-muted-foreground">Subscribed: {contact.channels}</span>
-          </div>
-          <Card className="mt-2 border-border/60 bg-muted/40">
-            <div className="flex items-center justify-between px-4 py-3">
+    <>
+      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex min-h-full items-center justify-center px-4 py-10">
+          <div
+            className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border/70 bg-card shadow-soft-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Recent campaign</p>
-                <p className="text-sm font-semibold">Psychological Safety Month</p>
-                <p className="text-xs text-muted-foreground">Opened email • Reacted in Slack</p>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground font-semibold">Recipient preview</p>
+                <h3 className="text-lg font-bold">{contact.name || contact.email || 'No name'}</h3>
               </div>
-              <Button variant="outline" size="sm">View profile</Button>
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          </Card>
+            <div className="p-5 space-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="font-semibold">{contact.title || '—'}</p>
+                  <p className="text-muted-foreground">{contact.location || '—'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-primary" />
+                <span className="text-muted-foreground">{contact.email}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-primary" />
+                <span className="text-muted-foreground">{contact.phone}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span className="text-muted-foreground">{contact.location}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-primary" />
+                <div className="flex flex-wrap gap-2">
+                  {(contact.tags || []).length
+                    ? contact.tags.map((tag) => (
+                        <Badge key={tag} variant="outline">{tag}</Badge>
+                      ))
+                    : <span className="text-muted-foreground">No tags</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-primary" />
+                <span className="text-muted-foreground">Subscribed: {contact.channels || '—'}</span>
+              </div>
+              <Card className="mt-2 border-border/60 bg-muted/40">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Recent campaign</p>
+                    <p className="text-sm font-semibold">Psychological Safety Month</p>
+                    <p className="text-xs text-muted-foreground">Opened email • Reacted in Slack</p>
+                  </div>
+                  <Button variant="outline" size="sm">View profile</Button>
+                </div>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
