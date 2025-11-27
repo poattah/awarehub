@@ -22,12 +22,13 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
     attendee_phone: '',
     notes: '',
   })
+  const [regFields, setRegFields] = useState<string[]>(['attendee_name','attendee_email','attendee_company','attendee_role','attendee_phone','notes'])
 
   useEffect(() => {
     const load = async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('id, name, description, start_at, end_at, location, virtual_url, capacity, list_id, organization_id, settings')
+        .select('id, name, description, start_at, end_at, location, virtual_url, capacity, list_id, organization_id, settings, cover_url')
         .eq('id', id)
         .maybeSingle()
       if (error || !data) {
@@ -50,6 +51,8 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
           if (theme.headingFont) setVar('--brand-font-heading', theme.headingFont)
           if (theme.bodyFont) setVar('--brand-font-body', theme.bodyFont)
         }
+        const rf = ((data as any).settings?.registration_fields || []) as string[]
+        if (rf && rf.length) setRegFields(rf)
       }
       setLoading(false)
     }
@@ -141,13 +144,31 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
   if (loading) return <div className="p-6">Loading event…</div>
   if (error || !event) return <div className="p-6 text-red-600">{error}</div>
 
+  const theme = (event.settings?.theme as any) || {}
+  const bgColor = theme.background || 'var(--brand-bg,#f8fafc)'
+  const textColor = theme.text || 'var(--brand-text,#0f172a)'
+  const buttonBg = theme.buttonBg || 'var(--brand-button-bg,#3b82f6)'
+  const buttonText = theme.buttonText || 'var(--brand-button-text,#ffffff)'
+  const headingFont = theme.headingFont ? `"${theme.headingFont}", var(--brand-font-heading, inherit)` : 'var(--brand-font-heading, inherit)'
+  const bodyFont = theme.bodyFont ? `"${theme.bodyFont}", var(--brand-font-body, inherit)` : 'var(--brand-font-body, inherit)'
+  const coverUrl = event.cover_url || ''
+
   return (
-    <div className="min-h-screen bg-[var(--brand-bg,#f8fafc)]" style={{ color: 'var(--brand-text,#0f172a)' }}>
+    <div className="min-h-screen" style={{ background: bgColor, color: textColor }}>
       <div className="mx-auto max-w-4xl px-4 py-10 space-y-6">
         <div className="space-y-3">
+          {coverUrl ? (
+            <div className="overflow-hidden rounded-2xl border border-border/60 shadow-soft-lg">
+              <div
+                className="h-56 w-full bg-center bg-cover"
+                style={{ backgroundImage: `url(${coverUrl})` }}
+                aria-label="Event cover"
+              />
+            </div>
+          ) : null}
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Event</p>
-          <h1 className="text-4xl font-bold" style={{ fontFamily: 'var(--brand-font-heading,inherit)' }}>{event.name}</h1>
-          <p className="text-muted-foreground" style={{ fontFamily: 'var(--brand-font-body,inherit)' }}>{event.description}</p>
+          <h1 className="text-4xl font-bold" style={{ fontFamily: headingFont }}>{event.name}</h1>
+          <p className="text-muted-foreground" style={{ fontFamily: bodyFont }}>{event.description}</p>
           <div className="text-sm text-muted-foreground space-y-1">
             <p>{new Date(event.start_at).toLocaleString()} {event.location ? `• ${event.location}` : ''}</p>
             {event.virtual_url && <p>Virtual: <a className="underline" href={event.virtual_url} target="_blank" rel="noreferrer">{event.virtual_url}</a></p>}
@@ -157,37 +178,51 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
         </div>
 
         {!isPast && (
-          <Card className="border-border/60 shadow-soft-lg bg-card/90">
+          <Card className="border-border/60 shadow-soft-lg bg-card/90" style={{ background: theme.card || 'rgba(255,255,255,0.9)' }}>
             <form className="space-y-3 p-4" onSubmit={submit}>
               <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <Label>Name</Label>
-                  <Input value={values.attendee_name} onChange={(e) => setValues((p) => ({ ...p, attendee_name: e.target.value }))} required />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input type="email" value={values.attendee_email} onChange={(e) => setValues((p) => ({ ...p, attendee_email: e.target.value }))} required />
-                </div>
-                <div>
-                  <Label>Company</Label>
-                  <Input value={values.attendee_company} onChange={(e) => setValues((p) => ({ ...p, attendee_company: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Role</Label>
-                  <Input value={values.attendee_role} onChange={(e) => setValues((p) => ({ ...p, attendee_role: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input value={values.attendee_phone} onChange={(e) => setValues((p) => ({ ...p, attendee_phone: e.target.value }))} />
-                </div>
-                <div className="md:col-span-2">
-                  <Label>Notes</Label>
-                  <Textarea placeholder="Anything else" value={values.notes} onChange={(e) => setValues((p) => ({ ...p, notes: e.target.value }))} />
-                </div>
+                {regFields.includes('attendee_name') && (
+                  <div>
+                    <Label>Name</Label>
+                    <Input value={values.attendee_name} onChange={(e) => setValues((p) => ({ ...p, attendee_name: e.target.value }))} required />
+                  </div>
+                )}
+                {regFields.includes('attendee_email') && (
+                  <div>
+                    <Label>Email</Label>
+                    <Input type="email" value={values.attendee_email} onChange={(e) => setValues((p) => ({ ...p, attendee_email: e.target.value }))} required />
+                  </div>
+                )}
+                {regFields.includes('attendee_company') && (
+                  <div>
+                    <Label>Company</Label>
+                    <Input value={values.attendee_company} onChange={(e) => setValues((p) => ({ ...p, attendee_company: e.target.value }))} />
+                  </div>
+                )}
+                {regFields.includes('attendee_role') && (
+                  <div>
+                    <Label>Role</Label>
+                    <Input value={values.attendee_role} onChange={(e) => setValues((p) => ({ ...p, attendee_role: e.target.value }))} />
+                  </div>
+                )}
+                {regFields.includes('attendee_phone') && (
+                  <div>
+                    <Label>Phone</Label>
+                    <Input value={values.attendee_phone} onChange={(e) => setValues((p) => ({ ...p, attendee_phone: e.target.value }))} />
+                  </div>
+                )}
+                {regFields.includes('notes') && (
+                  <div className="md:col-span-2">
+                    <Label>Notes</Label>
+                    <Textarea placeholder="Anything else" value={values.notes} onChange={(e) => setValues((p) => ({ ...p, notes: e.target.value }))} />
+                  </div>
+                )}
               </div>
               {statusMsg && <p className="text-xs text-muted-foreground">{statusMsg}</p>}
               <div className="flex justify-end gap-2">
-                <Button type="submit">{event.capacity ? 'RSVP' : 'Sign up'}</Button>
+                <Button type="submit" style={{ background: buttonBg, color: buttonText }}>
+                  {event.capacity ? 'RSVP' : 'Sign up'}
+                </Button>
               </div>
             </form>
           </Card>

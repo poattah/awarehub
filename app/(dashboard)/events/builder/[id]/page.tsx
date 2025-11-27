@@ -14,6 +14,7 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
   const router = useRouter()
   const [event, setEvent] = useState<any>(null)
   const [orgId, setOrgId] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +26,11 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
   const [themeButtonText, setThemeButtonText] = useState('#ffffff')
   const [themeHeadingFont, setThemeHeadingFont] = useState('Inter')
   const [themeBodyFont, setThemeBodyFont] = useState('Inter')
+  const [notifySubject, setNotifySubject] = useState('')
+  const [notifySendAt, setNotifySendAt] = useState('')
+  const [notifyStatus, setNotifyStatus] = useState<string | null>(null)
+  const defaultRegFields = ['attendee_name','attendee_email','attendee_company','attendee_role','attendee_phone','notes']
+  const [regFields, setRegFields] = useState<string[]>(defaultRegFields)
 
   useEffect(() => {
     const load = async () => {
@@ -46,6 +52,7 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
         return
       }
       setOrgId(profile.organization_id)
+      setUserId(userId)
       const { data, error } = await supabase
         .from('events')
         .select('*')
@@ -58,6 +65,7 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
         return
       }
       setEvent({ ...data })
+      setNotifySubject(`Invite: ${data.name || 'Event'}`)
       const theme = ((data as any).settings?.theme || {}) as any
       if (theme.primary) setThemePrimary(theme.primary)
       if (theme.background) setThemeBg(theme.background)
@@ -66,6 +74,8 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
       if (theme.buttonText) setThemeButtonText(theme.buttonText)
       if (theme.headingFont) setThemeHeadingFont(theme.headingFont)
       if (theme.bodyFont) setThemeBodyFont(theme.bodyFont)
+      const reg = ((data as any).settings?.registration_fields || []) as string[]
+      if (reg && reg.length) setRegFields(reg)
       setLoading(false)
     }
     load()
@@ -94,6 +104,7 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
         headingFont: themeHeadingFont,
         bodyFont: themeBodyFont,
       },
+      registration_fields: regFields,
     }
     const { error } = await supabase
       .from('events')
@@ -134,6 +145,7 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={() => router.push('/events')}>Back</Button>
+          <Button variant="outline" onClick={() => window.open(`/events/${id}`, '_blank')}>Preview</Button>
           <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
         </div>
       </div>
@@ -258,6 +270,98 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
                 <Button variant="outline">Outline</Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2 border-border/60">
+          <CardHeader>
+            <CardTitle>Notify list</CardTitle>
+            <CardDescription>Create a draft email campaign to invite the target list.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Subject</Label>
+                <Input value={notifySubject} onChange={(e) => setNotifySubject(e.target.value)} placeholder="Invite: Event name" />
+              </div>
+              <div className="space-y-1">
+                <Label>Send time (optional)</Label>
+                <Input type="datetime-local" value={notifySendAt} onChange={(e) => setNotifySendAt(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Leave blank to keep as draft and send later.</p>
+              </div>
+            </div>
+            {notifyStatus && <p className="text-xs text-muted-foreground">{notifyStatus}</p>}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  if (!event?.list_id) {
+                    setNotifyStatus('Add a target list to this event first.')
+                    return
+                  }
+                  if (!orgId || !userId) {
+                    setNotifyStatus('No organization context; please sign in again.')
+                    return
+                  }
+                  const baseUrl =
+                    typeof window !== 'undefined'
+                      ? window.location.origin
+                      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+                  const eventLink = `${baseUrl}/events/${event.id}`
+                  setNotifyStatus('Creating draft campaign...')
+                  const { error } = await supabase.from('campaigns').insert({
+                    organization_id: orgId,
+                    created_by: userId,
+                    name: notifySubject || `Invite: ${event.name}`,
+                    description: event.description || '',
+                    status: 'draft',
+                    start_at: notifySendAt || null,
+                    primary_category: 'Other',
+                    tags: ['event'],
+                    metadata: {
+                      type: 'event_notify',
+                      event_id: event.id,
+                      event_link: eventLink,
+                      list_id: event.list_id,
+                      location: event.location,
+                      start_at: event.start_at,
+                      virtual_url: event.virtual_url,
+                    },
+                  })
+                  if (error) {
+                    setNotifyStatus(error.message || 'Failed to create draft campaign')
+                    return
+                  }
+                  setNotifyStatus('Draft campaign created. Review and send from Campaigns.')
+                  setTimeout(() => setNotifyStatus(null), 1500)
+                }}
+              >
+                Create draft campaign
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2 border-border/60">
+          <CardHeader>
+            <CardTitle>Registration fields</CardTitle>
+            <CardDescription>Choose which fields appear on the RSVP form.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-3">
+            {defaultRegFields.map((field) => (
+              <label key={field} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={regFields.includes(field)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setRegFields((prev) => Array.from(new Set([...prev, field])))
+                    } else {
+                      setRegFields((prev) => prev.filter((f) => f !== field))
+                    }
+                  }}
+                />
+                <span className="capitalize">{field.replace('attendee_','').replace('_',' ')}</span>
+              </label>
+            ))}
           </CardContent>
         </Card>
       </div>
