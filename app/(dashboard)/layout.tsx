@@ -15,6 +15,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -46,15 +47,17 @@ export default function DashboardLayout({
     return () => clearTimeout(timer)
   }, [pathname])
 
+  const sidebarWidth = sidebarCollapsed ? '5rem' : '16rem'
+
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-background" style={{ ['--sidebar-width' as any]: sidebarWidth }}>
       {/* Fixed Sidebar */}
-      <aside className="fixed left-0 top-0 h-screen z-10">
-        <Sidebar />
+      <aside className="fixed left-0 top-0 h-screen z-10" style={{ width: sidebarWidth }}>
+        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((prev) => !prev)} />
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col ml-64">
+      <div className="flex-1 flex flex-col" style={{ marginLeft: sidebarWidth }}>
         {/* Fixed Header */}
         <div className="sticky top-0 z-10">
           <Header />

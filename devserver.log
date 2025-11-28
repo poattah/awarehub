@@ -1063,3 +1063,21 @@ Import trace for requested module:
  ○ Compiling /calendar ...
  ✓ Compiled /calendar in 560ms (483 modules)
  ✓ Compiled /dashboard in 364ms (488 modules)
+ ✓ Compiled in 1168ms (1055 modules)
+ ✓ Compiled in 1139ms (1059 modules)
+ ✓ Compiled /calendar in 265ms (475 modules)
+ ✓ Compiled /dashboard in 224ms (480 modules)
+ ○ Compiling /templates ...
+ ✓ Compiled /templates in 661ms (498 modules)
+ ○ Compiling /brand ...
+ ✓ Compiled /brand in 615ms (503 modules)
+ ✓ Compiled in 1138ms (1070 modules)
+ ✓ Compiled /calendar in 277ms (486 modules)
+ ✓ Compiled in 1099ms (1121 modules)
+ ○ Compiling /campaigns ...
+ ✓ Compiled /campaigns in 631ms (492 modules)
+ ○ Compiling /growth ...
+ ✓ Compiled /growth in 593ms (496 modules)
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 697ms (569 modules)
+ ✓ Compiled /integrations in 197ms (575 modules)

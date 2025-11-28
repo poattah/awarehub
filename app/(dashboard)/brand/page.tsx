@@ -28,6 +28,7 @@ export default function BrandPage() {
   const [customFontName, setCustomFontName] = useState('')
   const [customFontUrl, setCustomFontUrl] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
+  const [logoPreview, setLogoPreview] = useState('')
   const [buttonBg, setButtonBg] = useState('#3b82f6')
   const [buttonText, setButtonText] = useState('#ffffff')
   const [buttonRadius, setButtonRadius] = useState('9999px')
@@ -313,15 +314,21 @@ export default function BrandPage() {
               <div className="space-y-2">
                 <Label>Primary Logo</Label>
                 <div
-                  className="flex aspect-square items-center justify-center rounded-lg border-2 border-dashed hover:border-primary cursor-pointer transition-colors bg-muted/30"
+                  className="relative flex aspect-square items-center justify-center rounded-lg border-2 border-dashed hover:border-primary cursor-pointer transition-colors bg-muted/30 overflow-hidden"
                   onClick={() => fileInputLogo.current?.click()}
                 >
-                  {logoUrl ? (
-                    <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-4" />
+                  {(logoPreview || logoUrl) ? (
+                    <img src={logoPreview || logoUrl} alt="Logo" className="h-full w-full object-contain p-4" />
                   ) : (
                     <div className="text-center">
                       <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
                       <p className="mt-2 text-sm text-muted-foreground">Upload Logo</p>
+                    </div>
+                  )}
+                  {uploading.logo && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center text-white">
+                      <div className="h-10 w-10 rounded-full border-4 border-white/40 border-t-white animate-spin" />
+                      <p className="mt-2 text-xs font-semibold tracking-wide">Uploading…</p>
                     </div>
                   )}
                 </div>
@@ -333,11 +340,12 @@ export default function BrandPage() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0]
                     if (!file) return
+                    setLogoPreview(URL.createObjectURL(file))
                     const url = await handleUpload(file, 'logo')
                     if (url) setLogoUrl(url)
                   }}
                 />
-                {uploading.logo && <p className="text-xs text-muted-foreground">Uploading logo…</p>}
+                {!uploading.logo && logoUrl && <p className="text-xs text-muted-foreground">Logo updated</p>}
               </div>
             </div>
           </CardContent>
