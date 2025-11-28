@@ -155,25 +155,27 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
 
   return (
     <div className="min-h-screen" style={{ background: bgColor, color: textColor }}>
-      <div className="mx-auto max-w-4xl px-4 py-10 space-y-6">
+      <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
         <div className="space-y-3">
           {coverUrl ? (
             <div className="overflow-hidden rounded-2xl border border-border/60 shadow-soft-lg">
-              <div
-                className="h-56 w-full bg-center bg-cover"
-                style={{ backgroundImage: `url(${coverUrl})` }}
-                aria-label="Event cover"
-              />
+              <div className="relative w-full">
+                <img src={coverUrl} alt="Event cover" className="h-72 w-full object-cover" />
+              </div>
             </div>
           ) : null}
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Event</p>
-          <h1 className="text-4xl font-bold" style={{ fontFamily: headingFont }}>{event.name}</h1>
-          <p className="text-muted-foreground" style={{ fontFamily: bodyFont }}>{event.description}</p>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p>{new Date(event.start_at).toLocaleString()} {event.location ? `• ${event.location}` : ''}</p>
-            {event.virtual_url && <p>Virtual: <a className="underline" href={event.virtual_url} target="_blank" rel="noreferrer">{event.virtual_url}</a></p>}
-            {event.capacity ? <p>Capacity: {event.capacity}</p> : null}
-            {isPast && <p className="text-red-600">This event has passed.</p>}
+          <div className="space-y-2 border-b border-border/40 pb-4">
+            <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+              <span className="bg-primary/10 text-primary px-2 py-1 rounded-full">Event</span>
+              <span className="bg-muted px-2 py-1 rounded-full">Free</span>
+            </div>
+            <h1 className="text-4xl font-bold" style={{ fontFamily: headingFont }}>{event.name}</h1>
+            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+              <span>{new Date(event.start_at).toLocaleString()} {event.location ? `• ${event.location}` : ''}</span>
+              {event.virtual_url && <span>Virtual: <a className="underline" href={event.virtual_url} target="_blank" rel="noreferrer">{event.virtual_url}</a></span>}
+              {event.capacity ? <span>Capacity: {event.capacity}</span> : null}
+              {isPast && <span className="text-red-600">This event has passed.</span>}
+            </div>
           </div>
         </div>
 

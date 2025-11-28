@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Card } from '@/components/ui/card'
@@ -473,8 +474,10 @@ export default function RecipientsPage() {
     }
   }
 
+  const containerClass = isGrowthOnly ? 'space-y-6 max-w-6xl mx-auto px-4' : 'space-y-6'
+
   return (
-    <div className="space-y-6">
+    <div className={containerClass}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -1085,14 +1088,20 @@ export default function RecipientsPage() {
                   : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
               const eventUrl = `${baseUrl}/events/${ev.id}`
               return (
-                <div key={ev.id} className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between relative">
-                  <div className="min-w-0">
+                <div
+                  key={ev.id}
+                  className="flex flex-col gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between relative min-h-[64px]"
+                >
+                  <div className="min-w-0 space-y-1">
                     <p className="font-semibold truncate">{ev.name}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {ev.description || 'No description'} • {new Date(ev.start_at).toLocaleString()} • {ev.location || 'Virtual'}
+                    <p className="text-[11px] text-muted-foreground line-clamp-2">
+                      {ev.description || 'No description'}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-1">
+                      {new Date(ev.start_at).toLocaleString()} • {ev.location || 'Virtual'}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap md:flex-nowrap gap-2 whitespace-nowrap md:justify-end">
                     <Link href={`/events/builder/${ev.id}`}><Button size="sm" variant="outline">Builder</Button></Link>
                     <Link href={`/events/${ev.id}`} target="_blank"><Button size="sm" variant="outline">View</Button></Link>
                     <Button
@@ -2031,12 +2040,23 @@ function GrowthCard({ title, description, cta, onClick }: { title: string; descr
 }
 
 function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
-      <div className="w-full max-w-xl rounded-2xl border border-border/70 bg-card shadow-soft-lg" onClick={(e) => e.stopPropagation()}>
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xl rounded-2xl border border-border/70 bg-card shadow-soft-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -2049,7 +2069,11 @@ function RecipientPreview({ contact, onClose }: { contact: Contact; onClose: () 
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
 
-  return (
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
+
+  return createPortal(
     <>
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -2115,6 +2139,7 @@ function RecipientPreview({ contact, onClose }: { contact: Contact; onClose: () 
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }

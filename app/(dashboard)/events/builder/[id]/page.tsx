@@ -86,10 +86,10 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
   }
 
   const save = async () => {
-    if (!event || !orgId) return
+    if (!event || !orgId) return false
     if (!event.name?.trim() || !event.start_at) {
       setError('Name and start time are required')
-      return
+      return false
     }
     setSaving(true)
     setError(null)
@@ -127,10 +127,19 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
     setSaving(false)
     if (error) {
       setError(error.message || 'Failed to save event')
-      return
+      return false
     }
+    // Refetch to ensure preview shows latest content (e.g., description)
+    const { data: refreshed } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', orgId)
+      .maybeSingle()
+    if (refreshed) setEvent({ ...refreshed })
     setStatusMsg('Saved')
     setTimeout(() => setStatusMsg(null), 1200)
+    return true
   }
 
   if (loading) return <div className="p-6">Loading…</div>
@@ -145,7 +154,15 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={() => router.push('/events')}>Back</Button>
-          <Button variant="outline" onClick={() => window.open(`/events/${id}`, '_blank')}>Preview</Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const ok = await save()
+              if (ok) window.open(`/events/${id}?t=${Date.now()}`, '_blank')
+            }}
+          >
+            Preview
+          </Button>
           <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
         </div>
       </div>
@@ -345,23 +362,61 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
             <CardTitle>Registration fields</CardTitle>
             <CardDescription>Choose which fields appear on the RSVP form.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-3">
-            {defaultRegFields.map((field) => (
-              <label key={field} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={regFields.includes(field)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setRegFields((prev) => Array.from(new Set([...prev, field])))
-                    } else {
-                      setRegFields((prev) => prev.filter((f) => f !== field))
-                    }
-                  }}
-                />
-                <span className="capitalize">{field.replace('attendee_','').replace('_',' ')}</span>
-              </label>
+          <CardContent className="space-y-2">
+            {regFields.map((field, idx) => (
+              <div key={field} className="flex items-center justify-between rounded-lg border border-border/60 bg-card/60 px-3 py-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium capitalize">{field.replace('attendee_','').replace('_',' ')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      if (idx === 0) return
+                      setRegFields((prev) => {
+                        const next = [...prev]
+                        ;[next[idx-1], next[idx]] = [next[idx], next[idx-1]]
+                        return next
+                      })
+                    }}
+                  >
+                    ↑
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      if (idx === regFields.length - 1) return
+                      setRegFields((prev) => {
+                        const next = [...prev]
+                        ;[next[idx+1], next[idx]] = [next[idx], next[idx+1]]
+                        return next
+                      })
+                    }}
+                  >
+                    ↓
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setRegFields((prev) => prev.filter((f) => f !== field))}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
             ))}
+            {defaultRegFields.filter((f) => !regFields.includes(f)).length > 0 && (
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="text-muted-foreground">Add field:</span>
+                {defaultRegFields.filter((f) => !regFields.includes(f)).map((f) => (
+                  <Button key={f} size="sm" variant="outline" onClick={() => setRegFields((prev) => [...prev, f])}>
+                    {f.replace('attendee_','').replace('_',' ')}
+                  </Button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

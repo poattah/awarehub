@@ -976,3 +976,90 @@ Import trace for requested module:
  ✓ Compiled in 963ms (1058 modules)
  ✓ Compiled in 373ms (1058 modules)
  ✓ Compiled in 388ms (1058 modules)
+ ✓ Compiled in 1041ms (1058 modules)
+ ✓ Compiled in 802ms (1058 modules)
+ ✓ Compiled in 1103ms (1058 modules)
+ ✓ Compiled in 729ms (1058 modules)
+ ✓ Compiled in 814ms (1058 modules)
+ ✓ Compiled in 922ms (1058 modules)
+ ✓ Compiled in 1167ms (1058 modules)
+ ✓ Compiled in 1163ms (1058 modules)
+ ✓ Compiled in 791ms (1058 modules)
+ ○ Compiling /recipients ...
+ ✓ Compiled /recipients in 790ms (433 modules)
+ ○ Compiling /growth ...
+ ✓ Compiled /growth in 641ms (434 modules)
+ ○ Compiling /brand ...
+ ✓ Compiled /brand in 615ms (426 modules)
+ ✓ Compiled /growth in 158ms (439 modules)
+ ✓ Compiled in 930ms (1058 modules)
+ ○ Compiling /growth ...
+ ✓ Compiled /growth in 524ms (434 modules)
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 718ms (483 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 837ms (1059 modules)
+ ○ Compiling /recipients ...
+ ✓ Compiled /recipients in 638ms (433 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 591ms (432 modules)
+ ✓ Compiled /calendar in 159ms (485 modules)
+ ✓ Compiled in 947ms (1118 modules)
+ ○ Compiling /templates ...
+ ✓ Compiled /templates in 655ms (498 modules)
+ ✓ Compiled /brand in 484ms (504 modules)
+ ✓ Compiled in 1189ms (1083 modules)
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 620ms (480 modules)
+ ✓ Compiled /templates in 162ms (498 modules)
+ ○ Compiling /waitlist/[id] ...
+ ✓ Compiled /waitlist/[id] in 701ms (508 modules)
+ ✓ Compiled in 1180ms (1137 modules)
+ ✓ Compiled in 1127ms (1066 modules)
+ ✓ Compiled /campaigns in 336ms (437 modules)
+ ○ Compiling /forms/[id] ...
+ ✓ Compiled /forms/[id] in 1833ms (432 modules)
+ ✓ Compiled /campaigns in 411ms (428 modules)
+ ✓ Compiled in 852ms (1066 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 808ms (1047 modules)
+ ✓ Compiled in 1234ms (1056 modules)
+ ⨯ ./app/(dashboard)/recipients/page.tsx
+Error: 
+  [31mx[0m Unexpected token `div`. Expected jsx identifier
+     ,-[[36;1;4m/Users/princeowusuattah/awarehub/app/(dashboard)/recipients/page.tsx[0m:476:1]
+ [2m476[0m |   const containerClass = isGrowthOnly ? 'space-y-6 max-w-6xl mx-auto px-4' : 'space-y-6'
+ [2m477[0m | 
+ [2m478[0m |   return (
+ [2m479[0m |     <div className={containerClass}>
+     : [31;1m     ^^^[0m
+ [2m480[0m |       <div className="flex items-center justify-between">
+ [2m481[0m |         <div>
+ [2m482[0m |           <h1 className="text-3xl font-bold tracking-tight">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/(dashboard)/recipients/page.tsx
+./app/(dashboard)/growth/page.tsx
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 1574ms (1047 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 1167ms (1056 modules)
+ ✓ Compiled in 1090ms (1056 modules)
+ ○ Compiling /campaigns ...
+ ✓ Compiled /campaigns in 637ms (428 modules)
+ ○ Compiling /templates ...
+ ✓ Compiled /templates in 540ms (446 modules)
+ ✓ Compiled /events/[id] in 488ms (445 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 920ms (1074 modules)
+ ✓ Compiled in 862ms (1088 modules)
+ ✓ Compiled in 1444ms (1055 modules)
+ ○ Compiling /campaigns ...
+ ✓ Compiled /campaigns in 725ms (427 modules)
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 560ms (483 modules)
+ ✓ Compiled /dashboard in 364ms (488 modules)
