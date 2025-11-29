@@ -209,6 +209,47 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['recipient_contact_memberships']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['recipient_contact_memberships']['Insert']>
       }
+      automation_projects: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['automation_projects']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['automation_projects']['Insert']>
+      }
+      automation_nodes: {
+        Row: {
+          id: string
+          project_id: string
+          organization_id: string
+          type: string
+          label: string | null
+          data: Json
+          position: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['automation_nodes']['Row'], 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['automation_nodes']['Insert']>
+      }
+      automation_edges: {
+        Row: {
+          id: string
+          project_id: string
+          organization_id: string
+          source: string
+          target: string
+          label: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['automation_edges']['Row'], 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['automation_edges']['Insert']>
+      }
     }
     Views: {}
     Functions: {
