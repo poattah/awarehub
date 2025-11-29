@@ -80,13 +80,16 @@ export default function BrandPage() {
         .eq("id", userId)
         .maybeSingle();
       const orgIdFromProfile = (profile as any)?.organization_id as string | null;
-      if (!orgIdFromProfile) return;
+      if (!orgIdFromProfile) {
+        setLoading(false);
+        return;
+      }
       setOrgId(orgIdFromProfile);
       setLoading(true);
       const resp = await fetch("/api/internal/brand-kit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organization_id: profile.organization_id }),
+        body: JSON.stringify({ organization_id: orgIdFromProfile }),
       });
       setLoading(false);
       if (!resp.ok) return;
