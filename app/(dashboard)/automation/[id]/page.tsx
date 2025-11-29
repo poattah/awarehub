@@ -145,9 +145,10 @@ export default function AutomationCanvasPage({ params }: { params: { id: string 
     if (!orgId) return
     setSaving(true)
     setError(null)
-    const { error: projErr } = await supabase
+    const client = supabase as any
+    const { error: projErr } = await client
       .from('automation_projects')
-      .update({ name: projectName, description: projectDesc })
+      .update({ name: projectName, description: projectDesc } as any)
       .eq('id', id)
       .eq('organization_id', orgId)
     if (projErr) {
@@ -155,10 +156,10 @@ export default function AutomationCanvasPage({ params }: { params: { id: string 
       setSaving(false)
       return
     }
-    await supabase.from('automation_edges').delete().eq('project_id', id).eq('organization_id', orgId)
-    await supabase.from('automation_nodes').delete().eq('project_id', id).eq('organization_id', orgId)
+    await client.from('automation_edges').delete().eq('project_id', id).eq('organization_id', orgId)
+    await client.from('automation_nodes').delete().eq('project_id', id).eq('organization_id', orgId)
     if (nodes.length) {
-      await supabase.from('automation_nodes').insert(
+      await client.from('automation_nodes').insert(
         nodes.map((n) => ({
           id: n.id,
           project_id: id,
@@ -171,7 +172,7 @@ export default function AutomationCanvasPage({ params }: { params: { id: string 
       )
     }
     if (edges.length) {
-      await supabase.from('automation_edges').insert(
+      await client.from('automation_edges').insert(
         edges.map((e) => ({
           id: e.id,
           project_id: id,
