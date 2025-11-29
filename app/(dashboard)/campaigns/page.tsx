@@ -79,7 +79,8 @@ export default function CampaignsPage() {
           .select('organization_id')
           .eq('id', session.user.id)
           .single()
-        console.log('🏢 User organization:', profile?.organization_id)
+        const orgIdFromProfile = (profile as any)?.organization_id
+        console.log('🏢 User organization:', orgIdFromProfile)
       }
 
       const { data, error } = await supabase
@@ -103,11 +104,12 @@ export default function CampaignsPage() {
         return
       }
 
-      if (data && data.length) {
-        console.log(`✅ Loaded ${data.length} campaigns from Supabase`)
-        console.log('📋 First campaign:', data[0])
-        const mapped = data.map((item) => {
-          const meta = (item as any).metadata || {}
+      const rows = (data as any[]) || []
+      if (rows.length) {
+        console.log(`✅ Loaded ${rows.length} campaigns from Supabase`)
+        console.log('📋 First campaign:', rows[0])
+        const mapped = rows.map((item: any) => {
+          const meta = item.metadata || {}
           const startDate = item.start_at ? new Date(item.start_at).toLocaleDateString() : 'Not scheduled'
           const channels = Array.isArray(meta.channels) && meta.channels.length
             ? meta.channels
@@ -644,9 +646,10 @@ function SendCampaignModal({ campaign, emailContent, accentColor, onClose }: Sen
       if (error) {
         setError('Failed to load recipient lists')
       } else {
-        setRecipientLists(data || [])
-        if (data && data.length > 0) {
-          setSelectedListId(data[0].id)
+        const rows = (data as any[]) || []
+        setRecipientLists(rows)
+        if (rows.length > 0) {
+          setSelectedListId(rows[0].id as string)
         }
       }
       setLoading(false)

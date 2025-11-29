@@ -32,7 +32,9 @@ export async function GET(request: Request) {
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile?.organization_id) {
+  const orgIdFromProfile = (profile as any)?.organization_id
+
+  if (profileError || !orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User profile not found or missing organization' },
       { status: 403 }
@@ -80,11 +82,12 @@ export async function GET(request: Request) {
   const { data: channels } = await supabase
     .from('channels')
     .select('channel_type, is_enabled, configuration')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', orgIdFromProfile)
     .is('deleted_at', null)
 
-  if (channels) {
-    channels.forEach(channel => {
+  const channelRows = (channels as any[]) || []
+  if (channelRows.length) {
+    channelRows.forEach((channel: any) => {
       const integration = integrations.find(i => i.type === channel.channel_type)
       if (integration) {
         integration.isConnected = channel.is_enabled

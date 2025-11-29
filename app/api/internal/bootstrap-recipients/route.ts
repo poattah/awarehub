@@ -15,14 +15,14 @@ export async function POST() {
     )
   }
 
-  const supabase = createServerClient()
+  const supabase = createServerClient() as any
 
   const orgSlug = process.env.NEXT_PUBLIC_ORG_SLUG || 'awarehub-demo'
   const orgName = process.env.NEXT_PUBLIC_ORG_NAME || 'AwareHub Demo'
   const seedEmail = process.env.NEXT_PUBLIC_SEED_EMAIL || 'demo@awarehub.com'
   const seedName = process.env.NEXT_PUBLIC_SEED_NAME || 'Demo User'
 
-  const { data: org, error: orgError } = await supabase
+  const { data: org, error: orgError } = await (supabase as any)
     .from('organizations')
     .upsert({ slug: orgSlug, name: orgName }, { onConflict: 'slug' })
     .select('id')
@@ -32,7 +32,7 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: orgError?.message || 'org_upsert_failed' }, { status: 500 })
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await (supabase as any)
     .from('profiles')
     .upsert(
       {
@@ -72,7 +72,9 @@ export async function POST() {
     .insert(lists)
     .select('id, name')
 
-  if (insertListsError || !insertedLists?.length) {
+  const listRows = (insertedLists as any[]) || []
+
+  if (insertListsError || !listRows.length) {
     return NextResponse.json({ ok: false, error: insertListsError?.message || 'lists_insert_failed' }, { status: 500 })
   }
 
@@ -120,14 +122,16 @@ export async function POST() {
     .insert(contacts)
     .select('id, email')
 
-  if (contactsError || !insertedContacts?.length) {
+  const contactRows = (insertedContacts as any[]) || []
+
+  if (contactsError || !contactRows.length) {
     return NextResponse.json({ ok: false, error: contactsError?.message || 'contacts_insert_failed' }, { status: 500 })
   }
 
-  const allEmployeesId = insertedLists.find((l) => l.name === 'All Employees')?.id
-  const safetyId = insertedLists.find((l) => l.name === 'Safety Champions')?.id
+  const allEmployeesId = listRows.find((l: any) => l.name === 'All Employees')?.id
+  const safetyId = listRows.find((l: any) => l.name === 'Safety Champions')?.id
 
-  const memberships = insertedContacts.flatMap((c) => {
+  const memberships = contactRows.flatMap((c: any) => {
     if (c.email === 'kara.mills@awarehub.com' && safetyId) {
       return [{ list_id: safetyId, contact_id: c.id }]
     }

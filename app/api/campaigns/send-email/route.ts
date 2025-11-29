@@ -265,7 +265,8 @@ export async function POST(request: Request) {
     }
 
     // Update campaign status to active if it was draft
-    if (campaign.status === 'draft') {
+    const campaignStatus = (campaign as any)?.status
+    if (campaignStatus === 'draft') {
       await supabaseAdmin
         .from('campaigns')
         .update({

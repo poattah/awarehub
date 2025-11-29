@@ -17,7 +17,7 @@ export async function logAnalyticsEvent(event: AnalyticsEvent) {
     metadata: event.metadata || {},
   }
   try {
-    await supabase.from('analytics_events').insert(payload)
+    await (supabase as any).from('analytics_events').insert(payload as any)
   } catch {
     // swallow analytics errors
   }

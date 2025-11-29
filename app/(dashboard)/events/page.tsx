@@ -37,13 +37,14 @@ export default function EventsPage() {
         .select('organization_id')
         .eq('id', userId)
         .maybeSingle()
-      if (!profile?.organization_id) return
-      setOrgId(profile.organization_id)
+      const orgIdFromProfile = (profile as any)?.organization_id as string | null
+      if (!orgIdFromProfile) return
+      setOrgId(orgIdFromProfile)
       setLoading(true)
       const { data, error } = await supabase
         .from('events')
         .select('id, name, description, start_at, end_at, location, virtual_url, capacity, status')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', orgIdFromProfile)
         .order('start_at', { ascending: true })
       setLoading(false)
       if (error) {
@@ -65,7 +66,7 @@ export default function EventsPage() {
       return
     }
     setError(null)
-    const { error } = await supabase.from('events').insert({
+    const { error } = await (supabase as any).from('events').insert({
       organization_id: orgId,
       name: form.name.trim(),
       description: form.description.trim(),

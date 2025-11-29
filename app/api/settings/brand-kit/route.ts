@@ -44,7 +44,9 @@ export async function GET(request: Request) {
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile?.organization_id) {
+  const orgIdFromProfile = (profile as any)?.organization_id
+
+  if (profileError || !orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User profile not found or missing organization' },
       { status: 403 }
@@ -55,7 +57,7 @@ export async function GET(request: Request) {
   const { data: brandKit, error: brandError } = await supabase
     .from('brand_kits')
     .select('*')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', orgIdFromProfile)
     .maybeSingle()
 
   if (brandError) {
@@ -107,7 +109,9 @@ export async function PUT(request: Request) {
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile?.organization_id) {
+  const orgIdFromProfile = (profile as any)?.organization_id
+
+  if (profileError || !orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User profile not found or missing organization' },
       { status: 403 }
@@ -115,7 +119,7 @@ export async function PUT(request: Request) {
   }
 
   // Check if user has permission (org_admin or campaign_admin)
-  if (!['org_admin', 'campaign_admin'].includes(profile.role)) {
+  if (!['org_admin', 'campaign_admin'].includes((profile as any).role)) {
     return NextResponse.json(
       { ok: false, error: 'Insufficient permissions' },
       { status: 403 }
@@ -126,11 +130,11 @@ export async function PUT(request: Request) {
   const { data: existingBrandKit } = await supabase
     .from('brand_kits')
     .select('id')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', orgIdFromProfile)
     .maybeSingle()
 
   const brandKitData: any = {
-    organization_id: profile.organization_id,
+    organization_id: orgIdFromProfile,
   }
 
   if (body.primary_color) brandKitData.primary_color = body.primary_color
@@ -143,12 +147,14 @@ export async function PUT(request: Request) {
 
   let data, error
 
-  if (existingBrandKit) {
+  const existingId = (existingBrandKit as any)?.id
+
+  if (existingId) {
     // Update existing brand kit
-    const result = await supabase
+    const result = await (supabase as any)
       .from('brand_kits')
       .update(brandKitData)
-      .eq('id', existingBrandKit.id)
+      .eq('id', existingId)
       .select()
       .single()
 
@@ -156,7 +162,7 @@ export async function PUT(request: Request) {
     error = result.error
   } else {
     // Create new brand kit
-    const result = await supabase
+    const result = await (supabase as any)
       .from('brand_kits')
       .insert(brandKitData)
       .select()
@@ -172,7 +178,7 @@ export async function PUT(request: Request) {
   }
 
   console.log('✅ Brand kit updated successfully:', {
-    organization_id: profile.organization_id,
+    organization_id: orgIdFromProfile,
     updated_by: user.id
   })
 

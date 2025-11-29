@@ -46,26 +46,27 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
         .select('organization_id')
         .eq('id', userId)
         .maybeSingle()
-      if (!profile?.organization_id) {
+      const orgIdFromProfile = (profile as any)?.organization_id as string | null
+      if (!orgIdFromProfile) {
         setError('No organization context')
         setLoading(false)
         return
       }
-      setOrgId(profile.organization_id)
+      setOrgId(orgIdFromProfile)
       setUserId(userId)
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('id', id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', orgIdFromProfile)
         .maybeSingle()
       if (error || !data) {
         setError('Event not found')
         setLoading(false)
         return
       }
-      setEvent({ ...data })
-      setNotifySubject(`Invite: ${data.name || 'Event'}`)
+      setEvent({ ...(data as any) })
+      setNotifySubject(`Invite: ${(data as any).name || 'Event'}`)
       const theme = ((data as any).settings?.theme || {}) as any
       if (theme.primary) setThemePrimary(theme.primary)
       if (theme.background) setThemeBg(theme.background)
@@ -106,7 +107,7 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
       },
       registration_fields: regFields,
     }
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('events')
       .update({
         name: event.name.trim(),
@@ -136,7 +137,7 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
       .eq('id', id)
       .eq('organization_id', orgId)
       .maybeSingle()
-    if (refreshed) setEvent({ ...refreshed })
+    if (refreshed) setEvent({ ...(refreshed as any) })
     setStatusMsg('Saved')
     setTimeout(() => setStatusMsg(null), 1200)
     return true
@@ -325,7 +326,7 @@ export default function EventBuilderPage({ params }: { params: { id: string } })
                       : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
                   const eventLink = `${baseUrl}/events/${event.id}`
                   setNotifyStatus('Creating draft campaign...')
-                  const { error } = await supabase.from('campaigns').insert({
+                  const { error } = await (supabase as any).from('campaigns').insert({
                     organization_id: orgId,
                     created_by: userId,
                     name: notifySubject || `Invite: ${event.name}`,

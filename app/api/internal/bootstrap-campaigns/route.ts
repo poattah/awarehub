@@ -22,7 +22,7 @@ export async function POST() {
   const seedEmail = process.env.NEXT_PUBLIC_SEED_EMAIL || 'demo@awarehub.com'
   const seedName = process.env.NEXT_PUBLIC_SEED_NAME || 'Demo User'
 
-  const { data: org, error: orgError } = await supabase
+  const { data: org, error: orgError } = await (supabase as any)
     .from('organizations')
     .upsert({ slug: orgSlug, name: orgName }, { onConflict: 'slug' })
     .select('id')
@@ -32,7 +32,7 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: orgError?.message || 'org_upsert_failed' }, { status: 500 })
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await (supabase as any)
     .from('profiles')
     .upsert(
       {
@@ -116,7 +116,7 @@ export async function POST() {
     },
   ]
 
-  const { error: insertError } = await supabase.from('campaigns').insert(rows)
+  const { error: insertError } = await (supabase as any).from('campaigns').insert(rows as any)
 
   if (insertError) {
     return NextResponse.json({ ok: false, error: insertError.message }, { status: 500 })

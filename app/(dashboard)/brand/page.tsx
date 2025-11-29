@@ -227,7 +227,7 @@ export default function BrandPage() {
             Manage your organization's brand assets and styling
           </p>
         </div>
-        <Button onClick={saveBrand} disabled={saving || loading}>
+        <Button onClick={() => saveBrand()} disabled={saving || loading}>
           {saving ? "Saving…" : "Save Brand"}
         </Button>
       </div>

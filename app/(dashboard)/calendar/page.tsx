@@ -257,7 +257,8 @@ export default function CalendarPage() {
         .select('organization_id')
         .eq('id', userId)
         .maybeSingle()
-      if (data?.organization_id) setOrgId(data.organization_id as string)
+      const orgIdFromProfile = (data as any)?.organization_id as string | null
+      if (orgIdFromProfile) setOrgId(orgIdFromProfile)
     }
     loadOrg()
   }, [])
@@ -267,7 +268,7 @@ export default function CalendarPage() {
       if (!orgId) return
       setLoadingRemote(true)
       const [calRes, orgRes] = await Promise.all([
-        supabase
+        (supabase as any)
           .from('calendar_events')
           .select('id, title, description, category, start_date')
           .eq('organization_id', orgId)
@@ -327,7 +328,7 @@ export default function CalendarPage() {
       timeRange: form.timeRange || 'All day',
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('calendar_events')
       .insert({
         title: newEvent.title,

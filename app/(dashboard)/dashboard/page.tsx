@@ -22,16 +22,17 @@ export default function DashboardPage() {
         setLoading(false)
         return
       }
-      const { data } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', userId)
-        .maybeSingle()
-      if (data?.organization_id) {
-        setOrgId(data.organization_id as string)
-      } else {
-        setLoading(false)
-      }
+    const { data } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', userId)
+      .maybeSingle()
+    const orgIdFromProfile = (data as any)?.organization_id as string | null
+    if (orgIdFromProfile) {
+      setOrgId(orgIdFromProfile)
+    } else {
+      setLoading(false)
+    }
     }
     loadOrg()
   }, [])
@@ -292,7 +293,7 @@ const recentCampaigns = [
 ]
 
 const upcomingEvents = [
-  { id: 1, name: 'World Mental Health Day', date: 'October 10, 2024' },
-  { id: 2, name: 'International Women\'s Day', date: 'March 8, 2025' },
-  { id: 3, name: 'Black History Month', date: 'February 2025' },
+  { id: 1, name: 'World Mental Health Day', date: 'October 10, 2024', category: 'Awareness' },
+  { id: 2, name: 'International Women\'s Day', date: 'March 8, 2025', category: 'Awareness' },
+  { id: 3, name: 'Black History Month', date: 'February 2025', category: 'Awareness' },
 ]

@@ -40,7 +40,9 @@ export async function GET(request: Request) {
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile?.organization_id) {
+  const orgIdFromProfile = (profile as any)?.organization_id
+
+  if (profileError || !orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User profile not found or missing organization' },
       { status: 403 }
@@ -51,7 +53,7 @@ export async function GET(request: Request) {
   const { data: organization, error: orgError } = await supabase
     .from('organizations')
     .select('id, name, slug, industry, size_band, timezone, plan_tier, billing_email, is_active')
-    .eq('id', profile.organization_id)
+    .eq('id', orgIdFromProfile)
     .single()
 
   if (orgError) {
@@ -103,7 +105,9 @@ export async function PUT(request: Request) {
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile?.organization_id) {
+  const orgIdFromProfilePut = (profile as any)?.organization_id
+
+  if (profileError || !orgIdFromProfilePut) {
     return NextResponse.json(
       { ok: false, error: 'User profile not found or missing organization' },
       { status: 403 }
@@ -111,7 +115,7 @@ export async function PUT(request: Request) {
   }
 
   // Only org_admin can update organization settings
-  if (profile.role !== 'org_admin') {
+  if ((profile as any).role !== 'org_admin') {
     return NextResponse.json(
       { ok: false, error: 'Insufficient permissions - org_admin role required' },
       { status: 403 }
@@ -126,10 +130,10 @@ export async function PUT(request: Request) {
   if (body.timezone) updatePayload.timezone = body.timezone
   if (body.billing_email !== undefined) updatePayload.billing_email = body.billing_email
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('organizations')
     .update(updatePayload)
-    .eq('id', profile.organization_id)
+    .eq('id', orgIdFromProfilePut)
     .select()
     .single()
 
@@ -139,7 +143,7 @@ export async function PUT(request: Request) {
   }
 
   console.log('✅ Organization settings updated successfully:', {
-    organization_id: profile.organization_id,
+    organization_id: orgIdFromProfilePut,
     updated_by: user.id
   })
 

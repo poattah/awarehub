@@ -61,8 +61,9 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .single()
 
-    if (!profileError && existingProfile?.organization_id) {
-      organizationId = existingProfile.organization_id as string
+    const orgIdFromProfile = (existingProfile as any)?.organization_id
+    if (!profileError && orgIdFromProfile) {
+      organizationId = orgIdFromProfile as string
     } else {
       // Auto-bootstrap a lightweight org + profile for this user
       const orgSlug =
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
         (user.user_metadata?.full_name as string | undefined) ||
         (user.email ?? 'AwareHub Organization')
 
-      const { data: org, error: orgError } = await supabase
+      const { data: org, error: orgError } = await (supabase as any)
         .from('organizations')
         .upsert(
           {
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
         )
       }
 
-      const { error: upsertProfileError } = await supabase
+      const { error: upsertProfileError } = await (supabase as any)
         .from('profiles')
         .upsert(
           {
@@ -152,7 +153,7 @@ export async function POST(request: Request) {
     },
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('campaigns')
     .upsert(upsertPayload, { onConflict: 'id' })
     .select('id, status, organization_id')

@@ -98,7 +98,7 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
       if (error || !data) {
         setError(error?.message || 'Form not found')
       } else {
-        const fieldArray = Array.isArray(data.fields) ? (data.fields as FieldDef[]) : []
+        const fieldArray = Array.isArray((data as any)?.fields) ? ((data as any).fields as FieldDef[]) : []
         setForm(data as FormRecord)
         setFormKind(((data as any).kind as 'signup' | 'waitlist') || 'signup')
         setSettings((data as any).settings || {})
@@ -166,7 +166,7 @@ export default function FormBuilderPage({ params }: { params: { id: string } }) 
             },
           }
         : settings
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('signup_forms')
       .update({ fields: payload, settings: nextSettings })
       .eq('id', id)

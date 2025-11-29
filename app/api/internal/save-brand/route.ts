@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
   let result
   if (brand_kit_id) {
-    result = await supabase
+    result = await (supabase as any)
       .from('brand_kits')
       .update(payload)
       .eq('id', brand_kit_id)
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       .select('*')
       .maybeSingle()
   } else {
-    result = await supabase
+    result = await (supabase as any)
       .from('brand_kits')
       .insert(payload)
       .select('*')

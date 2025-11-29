@@ -48,7 +48,9 @@ export async function PUT(
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile?.organization_id) {
+  const orgIdFromProfile = (profile as any)?.organization_id
+
+  if (profileError || !orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User profile not found or missing organization' },
       { status: 403 }
@@ -56,7 +58,7 @@ export async function PUT(
   }
 
   // Only org_admin can configure channels
-  if (profile.role !== 'org_admin') {
+  if ((profile as any).role !== 'org_admin') {
     return NextResponse.json(
       { ok: false, error: 'Insufficient permissions - org_admin role required' },
       { status: 403 }
@@ -67,12 +69,12 @@ export async function PUT(
   const { data: existingChannel } = await supabase
     .from('channels')
     .select('id')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', orgIdFromProfile)
     .eq('channel_type', params.channelType)
     .maybeSingle()
 
   const channelData: any = {
-    organization_id: profile.organization_id,
+    organization_id: orgIdFromProfile,
     channel_type: params.channelType,
   }
 
@@ -83,10 +85,10 @@ export async function PUT(
 
   if (existingChannel) {
     // Update existing channel
-    const result = await supabase
+    const result = await (supabase as any)
       .from('channels')
       .update(channelData)
-      .eq('id', existingChannel.id)
+      .eq('id', (existingChannel as any).id)
       .select()
       .single()
 
@@ -95,7 +97,7 @@ export async function PUT(
   } else {
     // Create new channel
     channelData.is_enabled = body.is_enabled !== undefined ? body.is_enabled : true
-    const result = await supabase
+    const result = await (supabase as any)
       .from('channels')
       .insert(channelData)
       .select()
@@ -112,7 +114,7 @@ export async function PUT(
 
   console.log('✅ Channel configured successfully:', {
     channel_type: params.channelType,
-    organization_id: profile.organization_id,
+    organization_id: orgIdFromProfile,
     configured_by: user.id
   })
 

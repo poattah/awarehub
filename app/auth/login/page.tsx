@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,13 +10,16 @@ import { Label } from '@/components/ui/label'
 
 export default function LoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const defaultRedirect = searchParams.get('redirectTo') || '/dashboard'
+  const defaultRedirect = useMemo(() => {
+    if (typeof window === 'undefined') return '/dashboard'
+    const params = new URLSearchParams(window.location.search)
+    return params.get('redirectTo') || '/dashboard'
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -113,5 +116,4 @@ export default function LoginPage() {
     </main>
   )
 }
-
 

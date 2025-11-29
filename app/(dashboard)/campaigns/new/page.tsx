@@ -274,10 +274,13 @@ export default function CampaignBuilderPage() {
         .select('id, name')
         .order('name')
         .limit(50)
-      if (!error && data?.length) {
-        setAudienceOptions(data.map((d) => d.name))
+      const rows = (data as any[]) || []
+      if (!error && rows.length) {
+        setAudienceOptions(rows.map((d) => d.name))
         const map: Record<string, string> = {}
-        data.forEach((d) => { map[d.name] = d.id })
+        rows.forEach((d: any) => {
+          map[d.name] = d.id
+        })
         setAudienceMap(map)
       }
     }

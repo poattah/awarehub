@@ -34,7 +34,8 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .single()
 
-    if (!profileError && existingProfile?.organization_id) {
+    const orgIdFromProfile = (existingProfile as any)?.organization_id
+    if (!profileError && orgIdFromProfile) {
       return NextResponse.json({ ok: true, alreadyExists: true })
     }
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
       (user.user_metadata?.full_name as string | undefined) ||
       (user.email ?? 'AwareHub Organization')
 
-    const { data: org, error: orgError } = await supabase
+    const { data: org, error: orgError } = await (supabase as any)
       .from('organizations')
       .upsert(
         {
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { error: upsertProfileError } = await supabase
+    const { error: upsertProfileError } = await (supabase as any)
       .from('profiles')
       .upsert(
         {
@@ -99,5 +100,3 @@ export async function POST(request: Request) {
     )
   }
 }
-
-

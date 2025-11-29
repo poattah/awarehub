@@ -279,8 +279,9 @@ export default function RecipientsPage() {
         .select('organization_id')
         .eq('id', userId)
         .maybeSingle()
-      if (data?.organization_id) {
-        setCurrentOrgId(data.organization_id as string)
+      const orgIdFromProfile = (data as any)?.organization_id as string | null
+      if (orgIdFromProfile) {
+        setCurrentOrgId(orgIdFromProfile)
       }
       setOrgLoading(false)
     }
@@ -356,8 +357,9 @@ export default function RecipientsPage() {
         return
       }
 
-      if (data && data.length) {
-        const mapped: List[] = data.map((item) => ({
+      const rows = (data as any[]) || []
+      if (rows.length) {
+        const mapped: List[] = rows.map((item: any) => ({
           id: item.id,
           name: item.name,
           type: (item.type as 'List' | 'Segment') || 'List',
@@ -432,9 +434,10 @@ export default function RecipientsPage() {
       return
     }
 
-    if (data && data.length) {
-      const mapped: Contact[] = data
-        .map((row) => row.contact)
+    const rows = (data as any[]) || []
+    if (rows.length) {
+      const mapped: Contact[] = rows
+        .map((row: any) => row.contact)
         .filter(Boolean)
         .map((c) => {
           const meta = (c as any)?.metadata || {}
@@ -797,7 +800,7 @@ export default function RecipientsPage() {
                           }
                           setSavingContactId(contact.id)
                           setContactsError(null)
-                          const { error } = await supabase
+                          const { error } = await (supabase as any)
                             .from('recipient_contacts')
                             .update({
                               full_name: contact.name,
@@ -1208,7 +1211,7 @@ export default function RecipientsPage() {
                   }
                   setSavingList(true)
                   setListError(null)
-                  const { data, error } = await supabase
+                  const { data, error } = await (supabase as any)
                     .from('recipient_lists')
                     .insert({
                       name: newListName.trim(),
@@ -1337,8 +1340,9 @@ export default function RecipientsPage() {
                     return
                   }
                   // Navigate directly to builder after creation
-                  router.push(`/forms/builder/${data.id}`)
-                  setSignupForms((prev) => [data, ...prev])
+                  const created = data as any
+                  router.push(`/forms/builder/${created.id}`)
+                  setSignupForms((prev) => [created, ...prev])
                   setSignupName('')
                   setSignupDescription('')
                   setSignupTargetList('')
@@ -1429,7 +1433,7 @@ export default function RecipientsPage() {
                     return
                   }
                   setEventStatusMsg('Saving event...')
-                  const { error } = await supabase.from('events').insert({
+                  const { error } = await (supabase as any).from('events').insert({
                     organization_id: currentOrgId,
                     name: eventName.trim(),
                     description: eventDesc.trim(),
@@ -1517,7 +1521,7 @@ export default function RecipientsPage() {
                     .map((c) => c.trim())
                     .filter(Boolean)
                   setSavingContactId(editContact.id)
-                  const { error } = await supabase
+                  const { error } = await (supabase as any)
                     .from('recipient_contacts')
                     .update({
                       full_name: editName,
@@ -1683,8 +1687,9 @@ export default function RecipientsPage() {
                     setWaitlistStatus(null)
                     return
                   }
-                  router.push(`/waitlist/builder/${data.id}`)
-                  setWaitlistForms((prev) => [data, ...prev])
+                  const created = data as any
+                  router.push(`/waitlist/builder/${created.id}`)
+                  setWaitlistForms((prev) => [created, ...prev])
                   setWaitlistName('')
                   setWaitlistDescription('')
                   setWaitlistTargetList('')
@@ -1815,9 +1820,9 @@ export default function RecipientsPage() {
                   }
 
                   setImportStatus('Uploading contacts...')
-                  const { data: insertedContacts, error: contactsErr } = await supabase
+                  const { data: insertedContacts, error: contactsErr } = await (supabase as any)
                     .from('recipient_contacts')
-                    .insert(rows)
+                    .insert(rows as any)
                     .select('id, email')
 
                   if (contactsErr || !insertedContacts?.length) {
@@ -1970,7 +1975,7 @@ export default function RecipientsPage() {
                   })
                   const fullName = `${firstName.trim()} ${lastName.trim()}`
                   setContactsError(null)
-                  const { data: contact, error } = await supabase
+                  const { data: contact, error } = await (supabase as any)
                     .from('recipient_contacts')
                     .insert({
                       full_name: fullName,
@@ -1991,9 +1996,9 @@ export default function RecipientsPage() {
                     return
                   }
 
-                  await supabase
+                  await (supabase as any)
                     .from('recipient_contact_memberships')
-                    .insert({ list_id: selectedListId, contact_id: contact.id })
+                    .insert({ list_id: selectedListId, contact_id: contact.id } as any)
 
                   setContacts((prev) => [
                     ...prev,

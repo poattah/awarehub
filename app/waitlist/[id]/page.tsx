@@ -4,13 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Space_Grotesk, Manrope } from 'next/font/google'
 import { Loader2, Sparkles } from 'lucide-react'
 import { logAnalyticsEvent } from '@/lib/analytics'
 import { loadAndApplyBrandForOrg } from '@/lib/brand'
-
-const display = Space_Grotesk({ subsets: ['latin'], weight: ['500', '600', '700'] })
-const body = Manrope({ subsets: ['latin'], weight: ['400', '500', '600'] })
 
 type FieldDef = {
   key: string
@@ -90,7 +86,7 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
         setError('Waitlist form not found')
       } else {
         setForm(data as FormRecord)
-        const enabledFields = (data.fields as FieldDef[] | null) || defaultFields
+        const enabledFields = (((data as any)?.fields as FieldDef[] | null) || defaultFields)
         const initial: Record<string, string> = {}
         enabledFields.filter((f) => f.enabled).forEach((f) => {
           initial[f.key] = ''
@@ -196,11 +192,12 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
       .select('id')
       .maybeSingle()
 
-    if (contact?.id && form.target_list_id) {
+    const contactId = (contact as any)?.id
+    if (contactId && form.target_list_id) {
       const { error: membershipError } = await supabase
         .from('recipient_contact_memberships')
         .upsert(
-          { list_id: form.target_list_id, contact_id: contact.id } as any,
+          { list_id: form.target_list_id, contact_id: contactId } as any,
           { onConflict: 'list_id,contact_id' }
         )
       if (membershipError) {
@@ -258,7 +255,7 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
 
   return (
     <div
-      className={`min-h-screen ${display.className}`}
+      className="min-h-screen font-sans"
       style={{
         color: textColor,
         background: preset.background,
@@ -287,12 +284,12 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
           </Link>
         </header>
 
-        <main className={`relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 pb-16 text-center ${body.className}`} style={{ color: textColor }}>
+        <main className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 pb-16 text-center font-sans" style={{ color: textColor }}>
           <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200 shadow-lg">
             <Sparkles className="h-4 w-4 text-amber-300" />
             Access beta first
           </div>
-          <h1 className={`mt-6 text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight ${display.className}`}>
+          <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight font-sans">
             {headline}
           </h1>
           <p className="mt-4 max-w-2xl text-base sm:text-lg opacity-80">
@@ -351,7 +348,7 @@ export default function WaitlistPage({ params }: { params: { id: string } }) {
               { title: 'Auto-sync lists', body: 'Submissions flow straight into your target list with duplicate protection.' },
             ].map((item) => (
               <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner shadow-white/5" style={{ color: textColor }}>
-                <p className={`text-base font-semibold ${display.className}`}>{item.title}</p>
+                <p className="text-base font-semibold font-sans">{item.title}</p>
                 <p className="mt-2 text-sm opacity-80">{item.body}</p>
               </div>
             ))}

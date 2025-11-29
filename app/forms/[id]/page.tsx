@@ -169,11 +169,12 @@ export default function SignupFormPage({ params }: { params: { id: string } }) {
       .select('id')
       .maybeSingle()
 
-    if (contact?.id && form?.target_list_id) {
+    const contactId = (contact as any)?.id
+    if (contactId && form?.target_list_id) {
       const { error: membershipError } = await supabase
         .from('recipient_contact_memberships')
         .upsert(
-          { list_id: form.target_list_id, contact_id: contact.id } as any,
+          { list_id: form.target_list_id, contact_id: contactId } as any,
           { onConflict: 'list_id,contact_id' }
         )
       if (membershipError) {

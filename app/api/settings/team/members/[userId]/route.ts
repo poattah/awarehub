@@ -49,7 +49,9 @@ export async function PUT(
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile?.organization_id) {
+  const orgIdFromProfile = (profile as any)?.organization_id
+
+  if (profileError || !orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User profile not found or missing organization' },
       { status: 403 }
@@ -57,7 +59,7 @@ export async function PUT(
   }
 
   // Only org_admin can update team members
-  if (profile.role !== 'org_admin') {
+  if ((profile as any).role !== 'org_admin') {
     return NextResponse.json(
       { ok: false, error: 'Insufficient permissions - org_admin role required' },
       { status: 403 }
@@ -71,7 +73,7 @@ export async function PUT(
     .eq('id', userId)
     .single()
 
-  if (targetError || targetUser?.organization_id !== profile.organization_id) {
+  if (targetError || (targetUser as any)?.organization_id !== orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User not found in your organization' },
       { status: 404 }
@@ -83,7 +85,7 @@ export async function PUT(
     const { data: adminCount } = await supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', orgIdFromProfile)
       .eq('role', 'org_admin')
       .is('deleted_at', null)
 
@@ -91,11 +93,11 @@ export async function PUT(
       const { data: lastAdmin } = await supabase
         .from('profiles')
         .select('id')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', orgIdFromProfile)
         .eq('role', 'org_admin')
         .single()
 
-      if (lastAdmin?.id === userId) {
+      if ((lastAdmin as any)?.id === userId) {
         return NextResponse.json(
           { ok: false, error: 'Cannot change role of the last organization admin' },
           { status: 400 }
@@ -109,7 +111,7 @@ export async function PUT(
   if (body.role) updatePayload.role = body.role
   if (body.full_name) updatePayload.full_name = body.full_name
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('profiles')
     .update(updatePayload)
     .eq('id', userId)
@@ -164,7 +166,9 @@ export async function DELETE(
     .eq('id', user.id)
     .single()
 
-  if (profileError || !profile?.organization_id) {
+  const orgIdFromProfile = (profile as any)?.organization_id
+
+  if (profileError || !orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User profile not found or missing organization' },
       { status: 403 }
@@ -172,7 +176,7 @@ export async function DELETE(
   }
 
   // Only org_admin can remove team members
-  if (profile.role !== 'org_admin') {
+  if ((profile as any).role !== 'org_admin') {
     return NextResponse.json(
       { ok: false, error: 'Insufficient permissions - org_admin role required' },
       { status: 403 }
@@ -194,7 +198,7 @@ export async function DELETE(
     .eq('id', userId)
     .single()
 
-  if (targetError || targetUser?.organization_id !== profile.organization_id) {
+  if (targetError || (targetUser as any)?.organization_id !== orgIdFromProfile) {
     return NextResponse.json(
       { ok: false, error: 'User not found in your organization' },
       { status: 404 }
@@ -202,7 +206,7 @@ export async function DELETE(
   }
 
   // Soft delete the user
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('profiles')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', userId)

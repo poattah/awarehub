@@ -99,7 +99,7 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
       metadata: { notes: values.notes },
     }
 
-    const { error } = await supabase.from('event_registrations').insert(payload)
+    const { error } = await (supabase as any).from('event_registrations').insert(payload as any)
     if (error) {
       setStatusMsg(error.message || 'Failed to register')
       return
@@ -113,9 +113,9 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
         .eq('organization_id', event.organization_id)
         .eq('email', values.attendee_email.trim())
         .maybeSingle()
-      let contactId = existing?.id
+      let contactId = (existing as any)?.id
       if (!contactId) {
-        const { data: inserted } = await supabase
+        const { data: inserted } = await (supabase as any)
           .from('recipient_contacts')
           .insert({
             organization_id: event.organization_id,
@@ -127,10 +127,10 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
           })
           .select('id')
           .maybeSingle()
-        contactId = inserted?.id
+        contactId = (inserted as any)?.id
       }
       if (contactId) {
-        await supabase.from('recipient_contact_memberships').insert({
+        await (supabase as any).from('recipient_contact_memberships').insert({
           list_id: event.list_id,
           contact_id: contactId,
         })
