@@ -1192,3 +1192,10 @@ Import trace for requested module:
  ✓ Compiled in 990ms (1129 modules)
  ✓ Compiled in 1281ms (1124 modules)
  ✓ Compiled in 1103ms (1124 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 1785ms (1107 modules)
+ ○ Compiling /automation ...
+ ✓ Compiled /automation in 1335ms (1113 modules)
+ ✓ Compiled in 1163ms (1096 modules)
+ ✓ Compiled in 1099ms (1091 modules)
+ ✓ Compiled in 1177ms (1103 modules)

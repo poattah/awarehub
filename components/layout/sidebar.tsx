@@ -27,7 +27,8 @@ const navigation = [
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
   { name: 'Recipients', href: '/recipients', icon: Users2 },
   { name: 'Growth', href: '/growth', icon: TrendingUp },
-  { name: 'Automation', href: '/automation', icon: Zap },
+  // Automation temporarily disabled
+  // { name: 'Automation', href: '/automation', icon: Zap },
   { name: 'Templates', href: '/templates', icon: Layout },
   { name: 'Brand Kit', href: '/brand', icon: Palette },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
