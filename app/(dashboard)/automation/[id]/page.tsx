@@ -79,13 +79,14 @@ export default function AutomationCanvasPage({ params }: { params: { id: string 
         supabase.from('automation_nodes').select('*').eq('project_id', id).eq('organization_id', org),
         supabase.from('automation_edges').select('*').eq('project_id', id).eq('organization_id', org),
       ])
-      if (projRes.error || !projRes.data) {
+      const proj: any = projRes.data
+      if (projRes.error || !proj) {
         setError('Project not found')
         setLoading(false)
         return
       }
-      setProjectName(projRes.data.name)
-      setProjectDesc(projRes.data.description || '')
+      setProjectName(proj.name || '')
+      setProjectDesc(proj.description || '')
       setNodes(
         (nodeRes.data || []).map((n: any) => ({
           id: n.id,
