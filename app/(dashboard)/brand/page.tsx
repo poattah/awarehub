@@ -68,7 +68,7 @@ export default function BrandPage() {
         .from('profiles')
         .select('organization_id')
         .eq('id', userId)
-        .maybeSingle()
+        .maybeSingle<{ organization_id: string }>()
       if (!profile?.organization_id) return
       setOrgId(profile.organization_id)
       setLoading(true)
