@@ -1081,3 +1081,77 @@ Import trace for requested module:
  ○ Compiling /analytics ...
  ✓ Compiled /analytics in 697ms (569 modules)
  ✓ Compiled /integrations in 197ms (575 modules)
+ ✓ Compiled in 1089ms (1063 modules)
+ ✓ Compiled in 1013ms (1063 modules)
+ ✓ Compiled /templates in 305ms (441 modules)
+ ✓ Compiled in 737ms (1063 modules)
+ ○ Compiling /templates ...
+ ✓ Compiled /templates in 1386ms (441 modules)
+ ✓ Compiled in 942ms (1063 modules)
+ ✓ Compiled in 751ms (1063 modules)
+ ✓ Compiled in 446ms (1063 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 861ms (428 modules)
+ ✓ Compiled in 556ms (1068 modules)
+ ○ Compiling /templates ...
+ ✓ Compiled /templates in 573ms (441 modules)
+ ✓ Compiled in 956ms (1063 modules)
+ ✓ Compiled in 585ms (1063 modules)
+ ✓ Compiled in 1487ms (1049 modules)
+ ✓ Compiled in 568ms (1063 modules)
+ ✓ Compiled in 418ms (1063 modules)
+ ○ Compiling /api/internal/ensure-brand-bucket ...
+ ✓ Compiled /api/internal/ensure-brand-bucket in 839ms (528 modules)
+ ✓ Compiled in 918ms (1168 modules)
+ ✓ Compiled in 561ms (1168 modules)
+ ○ Compiling /templates ...
+ ✓ Compiled /templates in 686ms (546 modules)
+ ✓ Compiled in 1622ms (1154 modules)
+ ✓ Compiled in 803ms (1063 modules)
+ ✓ Compiled in 1195ms (1063 modules)
+ ✓ Compiled in 700ms (1063 modules)
+ ✓ Compiled in 385ms (640 modules)
+ ✓ Compiled /api/internal/ensure-brand-bucket in 394ms (528 modules)
+ ✓ Compiled /api/internal/save-brand in 336ms (530 modules)
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 586ms (543 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 604ms (548 modules)
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 610ms (604 modules)
+ ○ Compiling /templates ...
+ ✓ Compiled /templates in 620ms (502 modules)
+ ✓ Compiled /analytics in 217ms (580 modules)
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 897ms (613 modules)
+ ✓ Compiled /api/internal/ensure-brand-bucket in 467ms (575 modules)
+ ○ Compiling /api/internal/save-brand ...
+ ✓ Compiled /api/internal/save-brand in 542ms (575 modules)
+ ✓ Compiled in 1184ms (1215 modules)
+ ✓ Compiled in 708ms (1110 modules)
+ ✓ Compiled /api/internal/ensure-brand-bucket in 231ms (575 modules)
+ ✓ Compiled /api/internal/save-brand in 172ms (577 modules)
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 666ms (555 modules)
+ ✓ Compiled in 1483ms (1096 modules)
+ ✓ Compiled in 576ms (1110 modules)
+ ○ Compiling /api/internal/brand-kit ...
+ ✓ Compiled /api/internal/brand-kit in 689ms (575 modules)
+ ✓ Compiled /api/internal/ensure-brand-bucket in 345ms (577 modules)
+ ✓ Compiled /api/internal/save-brand in 359ms (579 modules)
+ ○ Compiling /campaigns ...
+ ✓ Compiled /campaigns in 762ms (590 modules)
+ ✓ Compiled /recipients in 436ms (593 modules)
+ ○ Compiling /templates ...
+ ✓ Compiled /templates in 676ms (502 modules)
+ ○ Compiling /events/[id] ...
+ ✓ Compiled /events/[id] in 665ms (492 modules)
+ ○ Compiling /events/builder/[id] ...
+ ✓ Compiled /events/builder/[id] in 508ms (472 modules)
+ ✓ Compiled /templates in 455ms (485 modules)
+ ✓ Compiled /campaigns in 320ms (440 modules)
+ ✓ Compiled /calendar in 217ms (496 modules)
+ ✓ Compiled in 1426ms (1121 modules)
+ ○ Compiling /recipients ...
+ ✓ Compiled /recipients in 814ms (491 modules)
+ ✓ Compiled /growth in 183ms (495 modules)

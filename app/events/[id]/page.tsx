@@ -179,6 +179,15 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
           </div>
         </div>
 
+        {event.description ? (
+          <Card className="border-border/60 shadow-soft-lg bg-card/90">
+            <div className="p-4 space-y-2">
+              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Overview</p>
+              <p className="text-base leading-relaxed" style={{ fontFamily: bodyFont }}>{event.description}</p>
+            </div>
+          </Card>
+        ) : null}
+
         {!isPast && (
           <Card className="border-border/60 shadow-soft-lg bg-card/90" style={{ background: theme.card || 'rgba(255,255,255,0.9)' }}>
             <form className="space-y-3 p-4" onSubmit={submit}>

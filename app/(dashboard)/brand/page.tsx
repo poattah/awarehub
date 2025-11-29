@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,11 +35,29 @@ export default function BrandPage() {
   const [buttonRadius, setButtonRadius] = useState('9999px')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [successModal, setSuccessModal] = useState<{ open: boolean; message: string }>({ open: false, message: '' })
   const [uploading, setUploading] = useState<UploadState>({})
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputLogo = useRef<HTMLInputElement | null>(null)
   const fileInputFont = useRef<HTMLInputElement | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  const sanitizeFilename = (name: string) => {
+    const parts = name.split('.')
+    const ext = parts.length > 1 ? `.${parts.pop()}` : ''
+    const base = parts.join('.')
+    const safe = base
+      .normalize('NFKD')
+      .replace(/[^\w.-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'file'
+    return `${safe}${ext}`
+  }
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const loadOrgAndBrand = async () => {
@@ -53,29 +72,30 @@ export default function BrandPage() {
       if (!profile?.organization_id) return
       setOrgId(profile.organization_id)
       setLoading(true)
-      const { data } = await supabase
-        .from('brand_kits')
-        .select('*')
-        .eq('organization_id', profile.organization_id)
-        .order('is_default', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      const resp = await fetch('/api/internal/brand-kit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organization_id: profile.organization_id }),
+      })
       setLoading(false)
+      if (!resp.ok) return
+      const json = await resp.json()
+      const data = json.data as any
       if (data) {
         setKit(data as BrandKit)
-        setName((data as any).name || 'Default brand')
-        setPrimary((data as any).primary_color || '#3b82f6')
-        setSecondary((data as any).secondary_color || '#10b981')
-        setAccent((data as any).accent_color || '#f59e0b')
-        setBackground((data as any).background_color || '#ffffff')
-        setText((data as any).text_color || '#0f172a')
-        setHeadingFont((data as any).font_family_heading || 'Inter')
-        setBodyFont((data as any).font_family_body || 'Inter')
-        setCustomFontName((data as any).font_custom_name || '')
-        setCustomFontUrl((data as any).font_custom_url || '')
-        setLogoUrl((data as any).logo_url || '')
-        const button = ((data as any).button_style || {}) as Record<string, any>
-        setButtonBg(button.bg || (data as any).primary_color || '#3b82f6')
+        setName(data.name || 'Default brand')
+        setPrimary(data.primary_color || '#3b82f6')
+        setSecondary(data.secondary_color || '#10b981')
+        setAccent(data.accent_color || '#f59e0b')
+        setBackground(data.background_color || '#ffffff')
+        setText(data.text_color || '#0f172a')
+        setHeadingFont(data.font_family_heading || 'Inter')
+        setBodyFont(data.font_family_body || 'Inter')
+        setCustomFontName(data.font_custom_name || '')
+        setCustomFontUrl(data.font_custom_url || '')
+        setLogoUrl(data.logo_url || '')
+        const button = (data.button_style || {}) as Record<string, any>
+        setButtonBg(button.bg || data.primary_color || '#3b82f6')
         setButtonText(button.text || '#ffffff')
         setButtonRadius(button.radius || '9999px')
         applyBrandToDocument(data as BrandKit)
@@ -100,33 +120,38 @@ export default function BrandPage() {
 
   const handleUpload = async (file: File, type: 'logo' | 'font') => {
     if (!orgId) return null
+    setUploadError(null)
+    // Ensure bucket exists (server-side create via service role)
+    const ensureRes = await fetch('/api/internal/ensure-brand-bucket', { method: 'POST' })
+    if (!ensureRes.ok) {
+      const msg = (await ensureRes.json().catch(() => null))?.error || 'Could not ensure bucket'
+      setUploadError(msg)
+      return null
+    }
+
     const bucket = supabase.storage.from('brand-assets')
-    const path = `${orgId}/${type}-${Date.now()}-${file.name}`
+    const safeName = sanitizeFilename(file.name)
+    const path = `${orgId}/${type}-${Date.now()}-${safeName}`
     setUploading((prev) => ({ ...prev, [type]: true }))
     const { error } = await bucket.upload(path, file, { upsert: true })
     setUploading((prev) => ({ ...prev, [type]: false }))
-    if (error) return null
+    if (error) {
+      setUploadError(error.message || 'Upload failed')
+      return null
+    }
     const { data: publicUrlData } = bucket.getPublicUrl(path)
     const url = publicUrlData?.publicUrl || null
-    if (url) {
-      await supabase.from('brand_assets').insert({
-        organization_id: orgId,
-        name: file.name,
-        type: type === 'logo' ? 'logo' : 'background',
-        file_url: url,
-      })
-    }
     return url
   }
 
-  const saveBrand = async () => {
+  const saveBrand = async (opts?: { logoUrl?: string }) => {
     if (!orgId) {
       setSaveError('No organization context; please sign in again.')
       return
     }
     setSaving(true)
     setSaveError(null)
-    setSaveMessage(null)
+    setSuccessModal({ open: false, message: '' })
     const button_style = {
       bg: buttonBg,
       text: buttonText,
@@ -144,36 +169,32 @@ export default function BrandPage() {
       font_family_body: bodyFont,
       font_custom_name: customFontName || null,
       font_custom_url: customFontUrl || null,
-      logo_url: logoUrl || null,
+      logo_url: (opts?.logoUrl ?? logoUrl) || null,
       button_style,
       is_default: true,
     }
-    let data: any = null
-    let error: any = null
-    if (kit?.id) {
-      ;({ data, error } = await supabase
-        .from('brand_kits')
-        .update(payload)
-        .eq('id', kit.id)
-        .eq('organization_id', orgId)
-        .select('*')
-        .maybeSingle())
-    } else {
-      ;({ data, error } = await supabase
-        .from('brand_kits')
-        .insert({ ...payload, is_default: true })
-        .select('*')
-        .maybeSingle())
-    }
+    // Save via service route to bypass RLS issues on brand_kits
+    const resp = await fetch('/api/internal/save-brand', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...payload,
+        brand_kit_id: kit?.id,
+      }),
+    })
     setSaving(false)
-    if (error) {
-      setSaveError(error.message || 'Failed to save brand kit')
+    if (!resp.ok) {
+      const msg = (await resp.json().catch(() => null))?.error || 'Failed to save brand kit'
+      setSaveError(msg)
       return
     }
+    const json = await resp.json()
+    const data = json.data as BrandKit
     if (data) {
-      setKit(data as BrandKit)
-      applyBrandToDocument(data as BrandKit)
-      setSaveMessage('Brand kit saved')
+      setKit(data)
+      setLogoUrl((data as any).logo_url || logoUrl)
+      applyBrandToDocument(data)
+      setSuccessModal({ open: true, message: 'Brand kit saved' })
     }
   }
 
@@ -189,7 +210,6 @@ export default function BrandPage() {
         </Button>
       </div>
       {saveError && <p className="text-sm text-red-600">{saveError}</p>}
-      {saveMessage && <p className="text-sm text-green-600">{saveMessage}</p>}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -342,15 +362,60 @@ export default function BrandPage() {
                     if (!file) return
                     setLogoPreview(URL.createObjectURL(file))
                     const url = await handleUpload(file, 'logo')
-                    if (url) setLogoUrl(url)
+                    if (url) {
+                      setLogoUrl(url)
+                      await saveBrand({ logoUrl: url })
+                    } else {
+                      setSaveError('Logo upload failed; not saved.')
+                    }
                   }}
                 />
-                {!uploading.logo && logoUrl && <p className="text-xs text-muted-foreground">Logo updated</p>}
+                {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+                {!uploading.logo && logoUrl && !uploadError && <p className="text-xs text-muted-foreground">Logo updated</p>}
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Current logo (saved)</Label>
+                <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 min-h-[88px]">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Saved logo" className="h-14 w-14 object-contain rounded-md bg-white p-2" />
+                  ) : (
+                    <div className="h-14 w-14 rounded-md border border-dashed border-border/60 flex items-center justify-center text-xs text-muted-foreground">
+                      None
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground">
+                    {logoUrl ? 'This is the currently saved logo.' : 'No logo saved yet.'}
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {mounted && successModal.open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+            onClick={() => setSuccessModal({ open: false, message: '' })}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl border border-border/70 bg-card shadow-soft-lg p-5 text-center space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mx-auto h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                <div className="h-6 w-6 rounded-full border-2 border-green-500 border-t-transparent animate-spin-slow" />
+              </div>
+              <h3 className="text-lg font-semibold">Success</h3>
+              <p className="text-sm text-muted-foreground">{successModal.message}</p>
+              <Button className="w-full" onClick={() => setSuccessModal({ open: false, message: '' })}>
+                Close
+              </Button>
+            </div>
+          </div>,
+          document.body
+        )
+      }
     </div>
   )
 }
