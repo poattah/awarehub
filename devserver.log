@@ -1186,3 +1186,7 @@ Import trace for requested module:
  ✓ Compiled in 1270ms (1073 modules)
  ✓ Compiled in 2.7s (1073 modules)
  ✓ Compiled in 846ms (1073 modules)
+ ✓ Compiled in 978ms (1073 modules)
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 974ms (479 modules)
+ ✓ Compiled in 990ms (1129 modules)

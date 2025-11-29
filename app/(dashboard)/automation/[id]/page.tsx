@@ -66,17 +66,18 @@ export default function AutomationCanvasPage({ params }: { params: { id: string 
         .from('profiles')
         .select('organization_id')
         .eq('id', userId)
-        .maybeSingle<any>()
-      if (!profile?.organization_id) {
+        .maybeSingle()
+      const org = (profile as any)?.organization_id as string | null
+      if (!org) {
         setError('No organization context')
         setLoading(false)
         return
       }
-      setOrgId(profile.organization_id)
+      setOrgId(org)
       const [projRes, nodeRes, edgeRes] = await Promise.all([
-        supabase.from('automation_projects').select('*').eq('id', id).eq('organization_id', profile.organization_id).maybeSingle<any>(),
-        supabase.from('automation_nodes').select('*').eq('project_id', id).eq('organization_id', profile.organization_id),
-        supabase.from('automation_edges').select('*').eq('project_id', id).eq('organization_id', profile.organization_id),
+        supabase.from('automation_projects').select('*').eq('id', id).eq('organization_id', org).maybeSingle(),
+        supabase.from('automation_nodes').select('*').eq('project_id', id).eq('organization_id', org),
+        supabase.from('automation_edges').select('*').eq('project_id', id).eq('organization_id', org),
       ])
       if (projRes.error || !projRes.data) {
         setError('Project not found')
