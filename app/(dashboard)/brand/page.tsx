@@ -79,8 +79,9 @@ export default function BrandPage() {
         .select("organization_id")
         .eq("id", userId)
         .maybeSingle();
-      if (!(profile as any)?.organization_id) return;
-      setOrgId((profile as any).organization_id);
+      const orgIdFromProfile = (profile as any)?.organization_id as string | null;
+      if (!orgIdFromProfile) return;
+      setOrgId(orgIdFromProfile);
       setLoading(true);
       const resp = await fetch("/api/internal/brand-kit", {
         method: "POST",
